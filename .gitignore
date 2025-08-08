@@ -1,0 +1,93 @@
+# Build outputs
+build/
+dist/
+
+# Dependencies
+node_modules/
+vendor/
+
+# Go module cache  
+go.sum
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# nyc test coverage
+.nyc_output
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+.temp/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Windows executable
+*.exe
+*.exe~
+
+# macOS
+*.app
+
+# Linux
+kbdshrtct
+
+# Package files
+*.deb
+*.rpm
+*.dmg
+*.msi
+
+# Wails build artifacts
+app.syso
+wails.json.backup
+
+# Frontend build artifacts
+frontend/dist/
+frontend/wailsjs/
+
+# Package manager files that can be regenerated
+frontend/package-lock.json
+frontend/package.json.md5
+
+# User configuration files (don't commit personal configs)
+config.json
+*.config
+.keyboard-cheatsheet/
