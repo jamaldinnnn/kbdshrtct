@@ -64,7 +64,7 @@ sudo dnf install gtk3-devel webkit2gtk3-devel gcc pkg-config
 
 ### Step 1: Clone the Repository
 ```bash
-git clone https://github.com/yourusername/kbdshrtct.git
+git clone https://github.com/jamaldinnnn/kbdshrtct.git
 cd kbdshrtct
 ```
 
