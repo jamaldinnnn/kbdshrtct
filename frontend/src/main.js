@@ -19,7 +19,14 @@ import {
     ImportLayout,
     GetKeyboardType,
     SetKeyboardType,
-    GetAvailableKeyboardTypes
+    GetAvailableKeyboardTypes,
+    // New Profile Management methods
+    GetAllProfiles,
+    GetActiveProfile,
+    SetActiveProfile,
+    CreateNewProfile,
+    UpdateProfileAppearance,
+    DeleteProfile
 } from '../wailsjs/go/main/App';
 
 // Global state
@@ -31,13 +38,20 @@ let activeModifiers = [];
 let availableModifiers = [];
 let keyPaletteHistory = []; // Persistent library of custom key designs
 
-// Zoom and pan state
-let zoomLevel = 1.0;
-let panX = 0;
-let panY = 0;
-let isPanning = false;
-let lastPanX = 0;
-let lastPanY = 0;
+// Profile state
+let profiles = [];
+let activeProfile = null;
+
+// Custom modifier button colors
+let customModifierColors = {
+    ctrl: '#ff6b6b',
+    shift: '#51cf66',
+    alt: '#ffd43b',
+    gui: '#339af0'
+};
+
+// User-created custom modifiers
+let customModifiers = [];
 
 // Initialize the app
 document.addEventListener('DOMContentLoaded', function() {
@@ -50,6 +64,10 @@ async function initializeApp() {
         
         // Load palette history first
         loadKeyPaletteHistory();
+        
+        // Load profiles first
+        console.log('Loading profiles...');
+        await loadProfiles();
         
         // Load initial data in sequence to avoid race conditions
         console.log('Loading keyboard type...');
@@ -113,9 +131,15 @@ async function loadCurrentLayer() {
         console.log(`Loading layer for keyboard type: ${currentKeyboardType}`);
         const keysJson = await GetCurrentLayer();
         if (keysJson && keysJson !== "null") {
-            currentKeys = JSON.parse(keysJson);
-            console.log(`Loaded ${currentKeys.length} keys for ${currentKeyboardType}`);
-            console.log('First few key IDs:', currentKeys.slice(0, 10).map(k => k.id));
+            const parsedKeys = JSON.parse(keysJson);
+            if (Array.isArray(parsedKeys)) {
+                currentKeys = parsedKeys;
+                console.log(`Loaded ${currentKeys.length} keys for ${currentKeyboardType}`);
+                console.log('First few key IDs:', currentKeys.slice(0, 10).map(k => k.id));
+            } else {
+                console.warn('Parsed keys is not an array:', parsedKeys);
+                currentKeys = [];
+            }
         } else {
             currentKeys = [];
         }
@@ -128,7 +152,13 @@ async function loadCurrentLayer() {
 async function loadAvailableModifiers() {
     try {
         const modsJson = await GetAvailableModifiers();
-        availableModifiers = JSON.parse(modsJson);
+        const parsedMods = JSON.parse(modsJson);
+        if (Array.isArray(parsedMods)) {
+            availableModifiers = parsedMods;
+        } else {
+            console.warn('Available modifiers is not an array:', parsedMods);
+            availableModifiers = ['ctrl', 'shift', 'alt', 'gui'];
+        }
     } catch (error) {
         console.error('Failed to load available modifiers:', error);
         availableModifiers = ['ctrl', 'shift', 'alt', 'gui'];
@@ -139,7 +169,13 @@ async function loadActiveModifiers() {
     try {
         const activeJson = await GetActiveModifiers();
         if (activeJson && activeJson !== "null") {
-            activeModifiers = JSON.parse(activeJson);
+            const parsedActive = JSON.parse(activeJson);
+            if (Array.isArray(parsedActive)) {
+                activeModifiers = parsedActive;
+            } else {
+                console.warn('Active modifiers is not an array:', parsedActive);
+                activeModifiers = [];
+            }
         } else {
             activeModifiers = [];
         }
@@ -149,43 +185,115 @@ async function loadActiveModifiers() {
     }
 }
 
+async function loadProfiles() {
+    try {
+        const profilesJson = await GetAllProfiles();
+        if (profilesJson && profilesJson !== "null") {
+            const parsedProfiles = JSON.parse(profilesJson);
+            if (Array.isArray(parsedProfiles)) {
+                profiles = parsedProfiles;
+                console.log(`Loaded ${profiles.length} profiles`);
+            } else {
+                console.warn('Profiles data is not an array:', parsedProfiles);
+                profiles = [];
+            }
+        } else {
+            profiles = [];
+        }
+        
+        // Load active profile
+        const activeProfileJson = await GetActiveProfile();
+        if (activeProfileJson && activeProfileJson !== "null") {
+            activeProfile = JSON.parse(activeProfileJson);
+            console.log('Loaded active profile:', activeProfile.name);
+        } else {
+            activeProfile = null;
+        }
+        
+    } catch (error) {
+        console.error('Failed to load profiles:', error);
+        profiles = [];
+        activeProfile = null;
+    }
+}
+
 function renderApp() {
     document.querySelector('#app').innerHTML = `
         <div class="keyboard-app">
             <header class="app-header">
                 <h1>kbdshrtct (α build)</h1>
                 <div class="controls">
-                    <div id="keyboard-type-selector" class="keyboard-type-selector"></div>
                     <div id="layer-selector"></div>
-                    <div class="zoom-controls">
-                        <button id="zoom-out-btn" class="btn-secondary">-</button>
-                        <span id="zoom-display" class="zoom-display">100%</span>
-                        <button id="zoom-in-btn" class="btn-secondary">+</button>
-                        <button id="zoom-reset-btn" class="btn-secondary">Reset</button>
-                    </div>
-                    <div class="layer-controls">
-                        <button id="add-layer-btn" class="btn-secondary">+ Add Layer</button>
-                        <button id="remove-layer-btn" class="btn-secondary">- Remove</button>
-                        <button id="reset-positions-btn" class="btn-secondary">Reset Layout</button>
-                    </div>
+                    <button id="settings-btn" class="btn-settings" title="Settings">
+                        <span class="settings-icon">⚙️</span>
+                    </button>
                 </div>
             </header>
             
             <div class="main-content">
+                <main class="keyboard-container" id="keyboard-container">
+                    <div id="keyboard-layout" class="keyboard-layout"></div>
+                </main>
+                
                 <aside class="modifier-panel" id="modifier-panel">
                     <h3>Active Modifiers</h3>
                     <div id="current-modifier-display" class="current-modifier"></div>
                     <div class="modifier-selector" id="modifier-selector"></div>
                 </aside>
-                
-                <main class="keyboard-container" id="keyboard-container">
-                    <div id="keyboard-layout" class="keyboard-layout"></div>
-                </main>
+            </div>
+            
+            <!-- Persistent Key Palette Panel -->
+            <div class="palette-panel" id="palette-panel">
+                <div class="palette-resize-handle" id="palette-resize-handle">
+                    <div class="resize-grip"></div>
+                </div>
+                <div class="palette-header">
+                    <h3>Key Palette</h3>
+                    <div class="palette-search">
+                        <input type="text" id="palette-search-input" placeholder="Search keys..." class="palette-search-input">
+                        <span class="search-icon">🔍</span>
+                    </div>
+                    <div class="palette-controls">
+                        <button id="palette-sort-btn" class="btn-secondary palette-sort-btn" title="Toggle sort: Time / Color">
+                            📅 Time
+                        </button>
+                        <button id="toggle-palette-btn" class="btn-secondary" title="Hide/Show palette">Hide</button>
+                    </div>
+                </div>
+                <div class="palette-content">
+                    <div class="palette-grid-container">
+                        <div id="persistent-palette-grid" class="persistent-palette-grid">
+                            <!-- Palette keys will be rendered here -->
+                        </div>
+                    </div>
+                    <div class="palette-empty-state" id="palette-empty-state">
+                        <p>No saved key designs yet</p>
+                        <p>Create custom keys and use "Add to Palette" to save your designs here</p>
+                    </div>
+                    <div class="palette-no-results" id="palette-no-results" style="display: none;">
+                        <p>No keys match your search</p>
+                        <p>Try different keywords or clear the search</p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Show Palette Button (appears when palette is hidden) -->
+            <div class="show-palette-btn" id="show-palette-btn" style="display: none;">
+                <button class="btn-secondary" title="Show key palette">
+                    <span>📋</span> Show Palette
+                </button>
+            </div>
+            
+            <!-- Profile Selector Button -->
+            <div class="profile-selector-btn" id="profile-selector-btn">
+                <button class="profile-btn" id="profile-btn" title="Switch profiles">
+                    <span id="profile-icon-text">P</span>
+                </button>
             </div>
         </div>
         
         <!-- Key Editor Modal -->
-        <div id="key-editor-modal" class="modal" style="display: none;">
+        <div id="key-editor-modal" class="modal primary-modal" style="display: none;">
             <div class="modal-content key-editor-content">
                 <span class="close">&times;</span>
                 <h2>Edit Key</h2>
@@ -263,7 +371,7 @@ function renderApp() {
         </div>
         
         <!-- Key Palette Modal -->
-        <div id="key-palette-modal" class="modal" style="display: none;">
+        <div id="key-palette-modal" class="modal secondary-modal" style="display: none;">
             <div class="modal-content key-palette-content">
                 <span class="close key-palette-close">&times;</span>
                 <h2>Key Palette</h2>
@@ -277,7 +385,7 @@ function renderApp() {
         </div>
         
         <!-- Add Layer Modal -->
-        <div id="add-layer-modal" class="modal" style="display: none;">
+        <div id="add-layer-modal" class="modal secondary-modal" style="display: none;">
             <div class="modal-content">
                 <span class="close">&times;</span>
                 <h2>Add Custom Layer</h2>
@@ -293,13 +401,171 @@ function renderApp() {
                 </form>
             </div>
         </div>
+        
+        <!-- Add Custom Modifier Modal -->
+        <div id="add-modifier-modal" class="modal secondary-modal" style="display: none;">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>Add Custom Modifier</h2>
+                <form id="add-modifier-form">
+                    <div class="form-group">
+                        <label for="modifier-name">Modifier Name:</label>
+                        <input type="text" id="modifier-name" name="name" required placeholder="e.g., Fn, Hyper, Meta" maxlength="8">
+                        <small class="help-text">Max 8 characters for button display</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="modifier-color">Button Color:</label>
+                        <div class="modifier-color-selector">
+                            <div class="color-preview-button" id="modifier-color-preview">
+                                <span class="color-preview-text">#8b5cf6</span>
+                                <span class="color-preview-hint">Click to change color</span>
+                            </div>
+                            <input type="color" id="modifier-color" value="#8b5cf6">
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" id="cancel-add-modifier">Cancel</button>
+                        <button type="submit">Add Modifier</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Settings Modal -->
+        <div id="settings-modal" class="modal primary-modal" style="display: none;">
+            <div class="modal-content settings-content">
+                <span class="close">&times;</span>
+                <h2>Settings</h2>
+                
+                <div class="settings-section">
+                    <h3>Keyboard Type</h3>
+                    <div id="settings-keyboard-type-selector" class="keyboard-type-selector">
+                        <!-- Will be populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <div class="settings-section">
+                    <h3>Layer Management</h3>
+                    <div class="layer-controls">
+                        <button id="settings-add-layer-btn" class="btn-secondary">+ Add Layer</button>
+                        <button id="settings-remove-layer-btn" class="btn-secondary">- Remove Layer</button>
+                    </div>
+                    <small class="help-text">Add custom layers or remove existing ones (base layers cannot be removed)</small>
+                </div>
+                
+                <div class="settings-section">
+                    <h3>Modifier Colors</h3>
+                    <p class="section-description">Customize the colors of modifier buttons</p>
+                    <button id="settings-toggle-color-customization" class="btn-secondary">🎨 Customize Colors</button>
+                    <div id="settings-color-customization-panel" class="color-panel" style="display: none;">
+                        <div id="settings-modifier-color-controls"></div>
+                        <button id="settings-reset-colors" class="btn-secondary" style="margin-top: 1rem;">Reset to Default</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Profile Management Modal -->
+        <div id="profile-management-modal" class="modal primary-modal" style="display: none;">
+            <div class="modal-content profile-management-content">
+                <span class="close">&times;</span>
+                <h2>Profile Management</h2>
+                
+                <div class="profiles-grid" id="profiles-grid">
+                    <!-- Profile items will be populated here -->
+                </div>
+                
+                <div class="profile-actions">
+                    <button type="button" id="add-new-profile-btn" class="btn-primary">+ Add New Profile</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Add New Profile Modal -->
+        <div id="add-profile-modal" class="modal secondary-modal" style="display: none;">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>Create New Profile</h2>
+                <form id="add-profile-form">
+                    <div class="profile-preview">
+                        <div class="profile-preview-key" id="add-profile-preview-key">
+                            <span id="add-profile-preview-text">P</span>
+                        </div>
+                        <p class="profile-preview-label">Preview</p>
+                    </div>
+                    <div class="form-group">
+                        <label for="profile-name-input">Profile Name:</label>
+                        <input type="text" id="profile-name-input" name="name" required placeholder="e.g., Gaming, Work, VS Code">
+                    </div>
+                    <div class="form-group">
+                        <label for="profile-color-input">Background Color:</label>
+                        <div class="color-input-wrapper">
+                            <input type="color" id="profile-color-input" value="#6366f1">
+                            <span class="color-label" id="add-color-label">#6366f1</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="add-profile-icon-input">Icon Image:</label>
+                        <div class="icon-upload-wrapper">
+                            <input type="file" id="add-profile-icon-input" accept="image/*">
+                            <button type="button" id="remove-add-profile-icon" class="btn-secondary" style="display: none;">Remove Image</button>
+                        </div>
+                        <p class="help-text">Upload a custom image for this profile (optional)</p>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" id="cancel-add-profile">Cancel</button>
+                        <button type="submit">Create Profile</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Edit Profile Modal -->
+        <div id="edit-profile-modal" class="modal secondary-modal" style="display: none;">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>Edit Profile</h2>
+                <form id="edit-profile-form">
+                    <div class="profile-preview">
+                        <div class="profile-preview-key" id="profile-preview-key">
+                            <span id="profile-preview-text">P</span>
+                        </div>
+                        <p class="profile-preview-label">Preview</p>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-profile-name-input">Profile Name:</label>
+                        <input type="text" id="edit-profile-name-input" name="name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-profile-color-input">Background Color:</label>
+                        <div class="color-input-wrapper">
+                            <input type="color" id="edit-profile-color-input" value="#6366f1">
+                            <span class="color-label" id="edit-color-label">#6366f1</span>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="edit-profile-icon-input">Icon Image:</label>
+                        <div class="icon-upload-wrapper">
+                            <input type="file" id="edit-profile-icon-input" accept="image/*">
+                            <button type="button" id="remove-profile-icon" class="btn-secondary" style="display: none;">Remove Image</button>
+                        </div>
+                        <p class="help-text">Upload a custom image for this profile (optional)</p>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" id="delete-profile-btn" class="btn-danger" style="margin-right: auto;">Delete Profile</button>
+                        <button type="button" id="cancel-edit-profile">Cancel</button>
+                        <button type="submit">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
     `;
+    
+    // Setup dynamic scaling
+    window.updateScale = setupDynamicScaling();
     
     // Set up modal controls
     setupModalControls();
-    
-    // Render keyboard type selector
-    renderKeyboardTypeSelector();
 }
 
 function renderKeyboardTypeSelector() {
@@ -334,12 +600,15 @@ function setupModalControls() {
     const keyModal = document.getElementById('key-editor-modal');
     const layerModal = document.getElementById('add-layer-modal');
     const paletteModal = document.getElementById('key-palette-modal');
+    const modifierModal = document.getElementById('add-modifier-modal');
+    const settingsModal = document.getElementById('settings-modal');
     const closeBtns = document.querySelectorAll('.close');
     const cancelEditBtn = document.getElementById('cancel-key-edit');
     const saveEditBtn = document.getElementById('save-key-edit');
     const openPaletteBtn = document.getElementById('open-palette-btn');
     const addToPaletteBtn = document.getElementById('add-to-palette-btn');
     const cancelAddLayerBtn = document.getElementById('cancel-add-layer');
+    const cancelAddModifierBtn = document.getElementById('cancel-add-modifier');
     
     // Close button handlers
     closeBtns.forEach(btn => {
@@ -347,6 +616,8 @@ function setupModalControls() {
             keyModal.style.display = 'none';
             layerModal.style.display = 'none';
             paletteModal.style.display = 'none';
+            modifierModal.style.display = 'none';
+            settingsModal.style.display = 'none';
         };
     });
     
@@ -356,6 +627,7 @@ function setupModalControls() {
         paletteModal.style.display = 'none';
     };
     cancelAddLayerBtn.onclick = () => layerModal.style.display = 'none';
+    cancelAddModifierBtn.onclick = () => modifierModal.style.display = 'none';
     
     // Save button handler
     saveEditBtn.onclick = async () => {
@@ -383,67 +655,435 @@ function setupModalControls() {
         }
         if (event.target === layerModal) layerModal.style.display = 'none';
         if (event.target === paletteModal) paletteModal.style.display = 'none';
+        if (event.target === modifierModal) modifierModal.style.display = 'none';
+        if (event.target === settingsModal) settingsModal.style.display = 'none';
     };
     
-    // Add Layer Modal form submission
+    // Form submission handlers
     document.getElementById('add-layer-form').onsubmit = async (e) => {
         e.preventDefault();
         await addCustomLayer();
     };
     
-    // Layer management button handlers
-    document.getElementById('add-layer-btn').onclick = () => {
-        layerModal.style.display = 'block';
+    document.getElementById('add-modifier-form').onsubmit = (e) => {
+        e.preventDefault();
+        addCustomModifier();
     };
     
-    document.getElementById('remove-layer-btn').onclick = async () => {
-        if (currentLayer !== 'base' && currentLayer !== 'lower' && currentLayer !== 'raise') {
-            if (confirm(`Are you sure you want to remove the "${currentLayer}" layer?`)) {
-                try {
-                    const layerToRemove = currentLayer;
-                    await RemoveCustomLayer(layerToRemove);
-                    
-                    // Reload the available layers
-                    await loadLayers();
-                    
-                    // If we removed the current layer, switch to base layer
-                    if (currentLayer === layerToRemove) {
-                        currentLayer = 'base';
-                        await SetCurrentLayer('base');
-                    }
-                    
-                    // Refresh the UI
-                    await loadCurrentLayer();
-                    renderLayerSelector();
-                    renderKeyboard();
-                    
-                } catch (error) {
-                    console.error('Failed to remove layer:', error);
-                    alert('Failed to remove layer: ' + error);
-                }
-            }
-        } else {
-            alert('Cannot remove built-in layers (base, lower, raise)');
-        }
-    };
+    // Setup color preview button for modifier modal
+    const modifierColorInput = document.getElementById('modifier-color');
+    const modifierColorPreview = document.getElementById('modifier-color-preview');
+    const modifierColorText = modifierColorPreview?.querySelector('.color-preview-text');
     
-    // Reset positions button handler
-    document.getElementById('reset-positions-btn').onclick = async () => {
-        if (confirm('Are you sure you want to reset all keys to their default positions? This cannot be undone.')) {
+    if (modifierColorInput && modifierColorPreview && modifierColorText) {
+        // Update preview when color changes
+        modifierColorInput.addEventListener('input', (e) => {
+            const color = e.target.value;
+            modifierColorText.textContent = color;
+            modifierColorPreview.style.backgroundColor = color;
+            modifierColorPreview.style.color = getContrastColor(color);
+        });
+        
+        // Set initial preview color
+        const initialColor = modifierColorInput.value;
+        modifierColorPreview.style.backgroundColor = initialColor;
+        modifierColorPreview.style.color = getContrastColor(initialColor);
+    }
+    
+    // Settings button handler
+    const settingsBtn = document.getElementById('settings-btn');
+    if (settingsBtn) {
+        settingsBtn.onclick = () => {
+            settingsModal.style.display = 'block';
+            setupSettingsModal(); // Initialize settings content when opened
+        };
+    }
+    
+    // Setup color customization controls
+    setupColorCustomization();
+    
+    // Setup persistent palette
+    setupPersistentPalette();
+    
+    // Setup profile management
+    setupProfileManagement();
+}
+
+function setupSettingsModal() {
+    // Setup keyboard type selector in settings
+    const settingsKeyboardSelector = document.getElementById('settings-keyboard-type-selector');
+    if (settingsKeyboardSelector) {
+        settingsKeyboardSelector.innerHTML = `
+            <label for="settings-keyboard-type-select">Keyboard Type:</label>
+            <select id="settings-keyboard-type-select">
+                <option value="corne" ${currentKeyboardType === 'corne' ? 'selected' : ''}>Corne (Split 42-key)</option>
+                <option value="tenkeyless" ${currentKeyboardType === 'tenkeyless' ? 'selected' : ''}>Tenkeyless (87-key)</option>
+            </select>
+        `;
+        
+        // Add change handler for keyboard type in settings
+        document.getElementById('settings-keyboard-type-select').onchange = async (e) => {
             try {
-                await resetKeyPositions();
+                await SetKeyboardType(e.target.value);
+                currentKeyboardType = e.target.value;
                 await loadCurrentLayer();
+                await loadLayers();
                 renderKeyboard();
-                console.log('Key positions reset to defaults');
+                renderLayerSelector();
+                renderModifierPanel();
+                
+                // Update layer management section based on keyboard type
+                updateLayerManagementSection();
             } catch (error) {
-                console.error('Failed to reset positions:', error);
-                alert('Failed to reset key positions: ' + error);
+                console.error('Failed to change keyboard type:', error);
             }
-        }
-    };
+        };
+    }
     
-    // Zoom control handlers
-    setupZoomControls();
+    // Initialize layer management section based on current keyboard type
+    updateLayerManagementSection();
+    
+    // Setup color customization in settings
+    setupSettingsColorCustomization();
+}
+
+function updateLayerManagementSection() {
+    const layerControlsContainer = document.querySelector('.settings-section .layer-controls');
+    const layerHelpText = document.querySelector('.settings-section .help-text');
+    
+    if (!layerControlsContainer || !layerHelpText) return;
+    
+    if (currentKeyboardType === 'tenkeyless') {
+        // Disable layer management for tenkeyless
+        layerControlsContainer.innerHTML = `
+            <button id="settings-add-layer-btn" class="btn-secondary" disabled title="Tenkeyless keyboards only support the base layer">+ Add Layer (Disabled)</button>
+            <button id="settings-remove-layer-btn" class="btn-secondary" disabled title="Tenkeyless keyboards only support the base layer">- Remove Layer (Disabled)</button>
+        `;
+        layerHelpText.textContent = 'Tenkeyless keyboards only support a single base layer. Layer management is not available.';
+        layerHelpText.style.color = '#999';
+    } else {
+        // Enable layer management for Corne
+        layerControlsContainer.innerHTML = `
+            <button id="settings-add-layer-btn" class="btn-secondary">+ Add Layer</button>
+            <button id="settings-remove-layer-btn" class="btn-secondary">- Remove Layer</button>
+        `;
+        layerHelpText.textContent = 'Add custom layers or remove existing ones (base layers cannot be removed)';
+        layerHelpText.style.color = '#6c757d';
+        
+        // Re-setup event handlers for enabled buttons
+        setupLayerManagementHandlers();
+    }
+}
+
+function setupLayerManagementHandlers() {
+    const settingsAddLayerBtn = document.getElementById('settings-add-layer-btn');
+    const settingsRemoveLayerBtn = document.getElementById('settings-remove-layer-btn');
+    const layerModal = document.getElementById('add-layer-modal');
+    
+    if (settingsAddLayerBtn && !settingsAddLayerBtn.disabled) {
+        settingsAddLayerBtn.onclick = () => {
+            layerModal.style.display = 'block';
+        };
+    }
+    
+    if (settingsRemoveLayerBtn && !settingsRemoveLayerBtn.disabled) {
+        settingsRemoveLayerBtn.onclick = async () => {
+            if (currentLayer !== 'base' && currentLayer !== 'lower' && currentLayer !== 'raise') {
+                if (confirm(`Are you sure you want to remove the "${currentLayer}" layer?`)) {
+                    try {
+                        const layerToRemove = currentLayer;
+                        await RemoveCustomLayer(layerToRemove);
+                        
+                        // Reload the available layers
+                        await loadLayers();
+                        
+                        // If we removed the current layer, switch to base layer
+                        if (currentLayer === layerToRemove) {
+                            currentLayer = 'base';
+                            await SetCurrentLayer('base');
+                        }
+                        
+                        // Refresh the UI
+                        await loadCurrentLayer();
+                        renderLayerSelector();
+                        renderKeyboard();
+                        
+                    } catch (error) {
+                        console.error('Failed to remove layer:', error);
+                        alert('Failed to remove layer: ' + error);
+                    }
+                }
+            } else {
+                alert('Cannot remove built-in layers (base, lower, raise)');
+            }
+        };
+    }
+}
+
+function setupSettingsColorCustomization() {
+    const toggleBtn = document.getElementById('settings-toggle-color-customization');
+    const panel = document.getElementById('settings-color-customization-panel');
+    const controlsContainer = document.getElementById('settings-modifier-color-controls');
+    const resetBtn = document.getElementById('settings-reset-colors');
+    
+    if (toggleBtn && panel && controlsContainer && resetBtn) {
+        // Toggle color panel visibility
+        toggleBtn.onclick = () => {
+            const isVisible = panel.style.display !== 'none';
+            panel.style.display = isVisible ? 'none' : 'block';
+            toggleBtn.textContent = isVisible ? '🎨 Customize Colors' : '🎨 Hide Colors';
+            
+            if (!isVisible) {
+                renderSettingsColorControls();
+            }
+        };
+        
+        // Reset to default colors
+        resetBtn.onclick = () => {
+            customModifierColors = {
+                ctrl: '#ff6b6b',
+                shift: '#51cf66',
+                alt: '#ffd43b',
+                gui: '#339af0'
+            };
+            saveCustomColors();
+            renderSettingsColorControls();
+            renderModifierPanel(); // Update the main modifier buttons
+        };
+    }
+}
+
+function renderSettingsColorControls() {
+    const container = document.getElementById('settings-modifier-color-controls');
+    if (!container) return;
+    
+    // Ensure availableModifiers is an array
+    if (!Array.isArray(availableModifiers)) {
+        console.warn('availableModifiers is not an array in renderSettingsColorControls:', availableModifiers);
+        availableModifiers = ['ctrl', 'shift', 'alt', 'gui'];
+    }
+    
+    container.innerHTML = availableModifiers.map(modifier => {
+        const color = customModifierColors[modifier] || '#666666';
+        // Ensure modifier is a string before using string methods
+        const safeModifier = String(modifier || '');
+        const modifierName = safeModifier.charAt(0).toUpperCase() + safeModifier.slice(1);
+        
+        return `
+            <div class="color-control-group">
+                <label class="color-control-label">${modifierName}</label>
+                <div class="color-inputs">
+                    <div class="color-input-item">
+                        <input type="color" 
+                               class="color-picker" 
+                               data-modifier="${modifier}"
+                               value="${color}">
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    // Add change handlers to color pickers
+    container.querySelectorAll('.color-picker').forEach(picker => {
+        picker.onchange = (e) => {
+            const modifier = e.target.dataset.modifier;
+            const color = e.target.value;
+            
+            customModifierColors[modifier] = color;
+            saveCustomColors();
+            renderModifierPanel(); // Update the main modifier buttons immediately
+        };
+    });
+}
+
+function setupColorCustomization() {
+    const toggleBtn = document.getElementById('toggle-color-customization');
+    const panel = document.getElementById('color-customization-panel');
+    const controlsContainer = document.getElementById('modifier-color-controls');
+    const resetBtn = document.getElementById('reset-colors');
+    
+    // Load custom colors from localStorage (this should always work)
+    loadCustomColors();
+    loadCustomModifiers();
+    
+    // Only set up event handlers if the elements exist (they may not exist anymore since we moved them to settings)
+    if (toggleBtn && panel && controlsContainer && resetBtn) {
+        // Toggle color panel visibility
+        toggleBtn.onclick = () => {
+            const isVisible = panel.style.display !== 'none';
+            panel.style.display = isVisible ? 'none' : 'block';
+            toggleBtn.textContent = isVisible ? '🎨 Customize Colors' : '🎨 Hide Colors';
+            
+            if (!isVisible) {
+                renderColorControls();
+            }
+        };
+        
+        // Reset to default colors
+        resetBtn.onclick = () => {
+            customModifierColors = {
+                ctrl: '#ff6b6b',
+                shift: '#51cf66',
+                alt: '#ffd43b',
+                gui: '#339af0'
+            };
+            saveCustomColors();
+            renderColorControls();
+            renderModifierPanel(); // Update the buttons
+        };
+    }
+}
+
+function renderColorControls() {
+    const container = document.getElementById('modifier-color-controls');
+    
+    // Return early if container doesn't exist (it was moved to settings modal)
+    if (!container) {
+        return;
+    }
+    
+    // Ensure availableModifiers is an array
+    if (!Array.isArray(availableModifiers)) {
+        console.warn('availableModifiers is not an array in renderColorControls:', availableModifiers);
+        availableModifiers = ['ctrl', 'shift', 'alt', 'gui'];
+    }
+    
+    container.innerHTML = availableModifiers.map(modifier => {
+        const color = customModifierColors[modifier] || '#666666';
+        // Ensure modifier is a string before using string methods
+        const safeModifier = String(modifier || '');
+        const modifierName = safeModifier.charAt(0).toUpperCase() + safeModifier.slice(1);
+        
+        return `
+            <div class="color-control-group">
+                <label class="color-control-label">${modifierName}</label>
+                <div class="color-inputs">
+                    <div class="color-input-item">
+                        <input type="color" 
+                               class="color-picker" 
+                               data-modifier="${modifier}"
+                               value="${color}">
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    // Add change handlers to color pickers
+    container.querySelectorAll('.color-picker').forEach(picker => {
+        picker.onchange = (e) => {
+            const modifier = e.target.dataset.modifier;
+            const color = e.target.value;
+            
+            customModifierColors[modifier] = color;
+            saveCustomColors();
+            renderModifierPanel(); // Update the buttons immediately
+        };
+    });
+}
+
+function loadCustomColors() {
+    try {
+        const saved = localStorage.getItem('customModifierColors');
+        if (saved) {
+            customModifierColors = { ...customModifierColors, ...JSON.parse(saved) };
+        }
+    } catch (error) {
+        console.error('Failed to load custom colors:', error);
+    }
+}
+
+function saveCustomColors() {
+    try {
+        localStorage.setItem('customModifierColors', JSON.stringify(customModifierColors));
+        localStorage.setItem('customModifiers', JSON.stringify(customModifiers));
+    } catch (error) {
+        console.error('Failed to save custom colors:', error);
+    }
+}
+
+function showAddModifierModal() {
+    const modal = document.getElementById('add-modifier-modal');
+    const colorInput = document.getElementById('modifier-color');
+    const colorPreview = document.getElementById('modifier-color-preview');
+    const colorText = colorPreview?.querySelector('.color-preview-text');
+    
+    // Reset form
+    document.getElementById('modifier-name').value = '';
+    const defaultColor = '#8b5cf6';
+    colorInput.value = defaultColor;
+    
+    // Update color preview
+    if (colorPreview && colorText) {
+        colorText.textContent = defaultColor;
+        colorPreview.style.backgroundColor = defaultColor;
+        colorPreview.style.color = getContrastColor(defaultColor);
+    }
+    
+    modal.style.display = 'block';
+}
+
+function addCustomModifier() {
+    const name = document.getElementById('modifier-name').value.trim().toLowerCase();
+    const color = document.getElementById('modifier-color').value;
+    
+    if (!name) {
+        alert('Please enter a modifier name');
+        return;
+    }
+    
+    // Check if name already exists
+    const allExistingNames = [...availableModifiers, ...customModifiers.map(m => m.name)];
+    if (allExistingNames.includes(name)) {
+        alert('A modifier with this name already exists');
+        return;
+    }
+    
+    // Add new custom modifier
+    customModifiers.push({ name, color });
+    saveCustomColors();
+    
+    // Close modal and refresh UI
+    document.getElementById('add-modifier-modal').style.display = 'none';
+    renderModifierPanel();
+}
+
+function loadCustomModifiers() {
+    try {
+        const saved = localStorage.getItem('customModifiers');
+        if (saved) {
+            customModifiers = JSON.parse(saved);
+        }
+    } catch (error) {
+        console.error('Failed to load custom modifiers:', error);
+        customModifiers = [];
+    }
+}
+
+function deleteCustomModifier(modifierName) {
+    if (!confirm(`Are you sure you want to delete the "${modifierName}" modifier? This cannot be undone.`)) {
+        return;
+    }
+    
+    // Remove from customModifiers array
+    customModifiers = customModifiers.filter(mod => mod.name !== modifierName);
+    
+    // Remove from activeModifiers if it's currently active
+    const activeIndex = activeModifiers.indexOf(modifierName);
+    if (activeIndex > -1) {
+        activeModifiers.splice(activeIndex, 1);
+        // Update backend with new active modifiers
+        SetActiveModifiers(JSON.stringify(activeModifiers)).catch(error => {
+            console.error('Failed to update active modifiers:', error);
+        });
+    }
+    
+    // Save updated customModifiers to localStorage
+    saveCustomColors();
+    
+    // Refresh UI
+    renderModifierPanel();
 }
 
 function setupImageSlotHandlers() {
@@ -516,7 +1156,10 @@ function handleImageFile(file, slot, slotType) {
         
         // Store for saving
         const modal = document.getElementById('key-editor-modal');
-        modal.dataset[`pending${slotType.charAt(0).toUpperCase() + slotType.slice(1)}ImageData`] = imageData;
+        // Ensure slotType is a string before using string methods
+        const safeSlotType = String(slotType || '');
+        const capitalizedSlotType = safeSlotType.charAt(0).toUpperCase() + safeSlotType.slice(1);
+        modal.dataset[`pending${capitalizedSlotType}ImageData`] = imageData;
     };
     reader.readAsDataURL(file);
 }
@@ -576,120 +1219,75 @@ function clearSlotImage(slot, slotType) {
     // Remove class and clear data
     slot.classList.remove('has-image');
     const modal = document.getElementById('key-editor-modal');
-    const dataKey = `pending${slotType.charAt(0).toUpperCase() + slotType.slice(1)}ImageData`;
+    // Ensure slotType is a string before using string methods
+    const safeSlotType = String(slotType || '');
+    const capitalizedSlotType = safeSlotType.charAt(0).toUpperCase() + safeSlotType.slice(1);
+    const dataKey = `pending${capitalizedSlotType}ImageData`;
     delete modal.dataset[dataKey];
     
     // Mark for removal if it was previously saved
-    const removeKey = `remove${slotType.charAt(0).toUpperCase() + slotType.slice(1)}`;
+    const removeKey = `remove${capitalizedSlotType}`;
     modal.dataset[removeKey] = 'true';
 }
 
-function setupZoomControls() {
-    const zoomInBtn = document.getElementById('zoom-in-btn');
-    const zoomOutBtn = document.getElementById('zoom-out-btn');
-    const zoomResetBtn = document.getElementById('zoom-reset-btn');
-    const keyboardContainer = document.getElementById('keyboard-container');
-    
-    // Zoom in
-    zoomInBtn.onclick = () => {
-        zoomLevel = Math.min(zoomLevel * 1.25, 3.0);
-        applyZoomAndPan();
-    };
-    
-    // Zoom out
-    zoomOutBtn.onclick = () => {
-        zoomLevel = Math.max(zoomLevel / 1.25, 0.25);
-        applyZoomAndPan();
-    };
-    
-    // Reset zoom and pan
-    zoomResetBtn.onclick = () => {
-        zoomLevel = 1.0;
-        panX = 0;
-        panY = 0;
-        applyZoomAndPan();
-    };
-    
-    // Mouse wheel zoom
-    keyboardContainer.addEventListener('wheel', (e) => {
-        e.preventDefault();
-        
-        const rect = keyboardContainer.getBoundingClientRect();
-        const centerX = rect.width / 2;
-        const centerY = rect.height / 2;
-        
-        // Calculate mouse position relative to container center
-        const mouseX = e.clientX - rect.left - centerX;
-        const mouseY = e.clientY - rect.top - centerY;
-        
-        const oldZoom = zoomLevel;
-        
-        // Zoom in/out based on wheel direction
-        if (e.deltaY < 0) {
-            zoomLevel = Math.min(zoomLevel * 1.1, 3.0);
-        } else {
-            zoomLevel = Math.max(zoomLevel / 1.1, 0.25);
-        }
-        
-        // Adjust pan to zoom into mouse position
-        const zoomFactor = zoomLevel / oldZoom;
-        panX = mouseX - (mouseX - panX) * zoomFactor;
-        panY = mouseY - (mouseY - panY) * zoomFactor;
-        
-        applyZoomAndPan();
-    });
-    
-    // Pan functionality
-    let isDragging = false;
-    let lastX = 0;
-    let lastY = 0;
-    
-    keyboardContainer.addEventListener('mousedown', (e) => {
-        // Only start panning if not clicking on a key
-        if (!e.target.closest('.key')) {
-            isDragging = true;
-            lastX = e.clientX;
-            lastY = e.clientY;
-            keyboardContainer.style.cursor = 'grabbing';
-            e.preventDefault();
-        }
-    });
-    
-    document.addEventListener('mousemove', (e) => {
-        if (isDragging) {
-            const deltaX = e.clientX - lastX;
-            const deltaY = e.clientY - lastY;
-            
-            panX += deltaX;
-            panY += deltaY;
-            
-            lastX = e.clientX;
-            lastY = e.clientY;
-            
-            applyZoomAndPan();
-        }
-    });
-    
-    document.addEventListener('mouseup', () => {
-        if (isDragging) {
-            isDragging = false;
-            keyboardContainer.style.cursor = '';
-        }
-    });
-}
 
-function applyZoomAndPan() {
-    const keyboardLayout = document.getElementById('keyboard-layout');
-    if (!keyboardLayout) return;
-    
-    keyboardLayout.style.transform = `scale(${zoomLevel}) translate(${panX / zoomLevel}px, ${panY / zoomLevel}px)`;
-    keyboardLayout.style.transformOrigin = 'center center';
-    
-    // Update zoom display
-    const zoomDisplay = document.getElementById('zoom-display');
-    if (zoomDisplay) {
-        zoomDisplay.textContent = `${Math.round(zoomLevel * 100)}%`;
+function setupDynamicScaling() {
+    function updateScale() {
+        const keyboardLayout = document.getElementById('keyboard-layout');
+        const container = document.getElementById('keyboard-container');
+        
+        if (!keyboardLayout || !container) return;
+        
+        // Reset any existing transform to get natural dimensions
+        keyboardLayout.style.transform = '';
+        
+        // Small delay to ensure layout is calculated
+        setTimeout(() => {
+            const layoutRect = keyboardLayout.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+            
+            // Calculate available space (minimal padding)
+            const availableWidth = containerRect.width - 10;
+            const availableHeight = containerRect.height - 10;
+            
+            if (layoutRect.width === 0 || layoutRect.height === 0) return;
+            
+            // Calculate scale factors
+            const scaleX = availableWidth / layoutRect.width;
+            const scaleY = availableHeight / layoutRect.height;
+            
+            // Use the smaller scale, but allow much larger scaling for high-res screens
+            // Base scale on screen size - much higher limits for 1440p and 4K
+            const screenWidth = window.innerWidth;
+            let maxScale = 2.5; // Default for 1080p
+            
+            if (screenWidth >= 3840) {
+                maxScale = 6.0; // 4K screens
+            } else if (screenWidth >= 2560) {
+                maxScale = 4.5; // 1440p screens
+            } else if (screenWidth >= 1920) {
+                maxScale = 3.0; // 1080p screens
+            }
+            
+            const scale = Math.min(scaleX, scaleY, maxScale);
+            
+            // Apply the scale
+            keyboardLayout.style.transform = `scale(${scale})`;
+            keyboardLayout.style.transformOrigin = 'center center';
+        }, 10);
     }
+    
+    // Update scale on window resize with debouncing
+    let resizeTimeout;
+    window.addEventListener('resize', () => {
+        clearTimeout(resizeTimeout);
+        resizeTimeout = setTimeout(updateScale, 50); // Faster response
+    });
+    
+    // Initial scale update
+    setTimeout(updateScale, 200);
+    
+    return updateScale;
 }
 
 function renderKeyboard() {
@@ -704,37 +1302,140 @@ function renderKeyboard() {
     
     // Add click handlers to keys
     addKeyClickHandlers();
+    
+    // Update dynamic scaling after rendering
+    if (window.updateScale) {
+        setTimeout(window.updateScale, 50);
+    }
 }
 
 function renderCorneKeyboard(container) {
-    // Separate left and right keys
-    const leftKeys = currentKeys.filter(key => key.side === 'left').sort((a, b) => {
-        if (a.row !== b.row) return a.row - b.row;
-        return a.col - b.col;
-    });
-    
-    const rightKeys = currentKeys.filter(key => key.side === 'right').sort((a, b) => {
-        if (a.row !== b.row) return a.row - b.row;
-        return a.col - b.col;
-    });
-    
+    // Use absolute positioning for Corne layout like tenkeyless
     container.innerHTML = `
-        <div class="keyboard-split">
-            <div class="keyboard-half left-half">
-                <div class="keys-grid left-grid">
-                    ${renderKeyGrid(leftKeys, 'left')}
-                </div>
-            </div>
-            
-            <div class="keyboard-gap"></div>
-            
-            <div class="keyboard-half right-half">
-                <div class="keys-grid right-grid">
-                    ${renderKeyGrid(rightKeys, 'right')}
-                </div>
+        <div class="keyboard-corne">
+            <div class="corne-grid">
+                ${renderAllCorneKeys(currentKeys)}
             </div>
         </div>
     `;
+}
+
+function renderAllCorneKeys(keys) {
+    console.log('Rendering Corne keys:', keys.length, 'keys found');
+    console.log('Sample keys:', keys.slice(0, 5).map(k => `${k.id}: ${k.label} (${k.row},${k.col},${k.side})`));
+    
+    return keys.map(key => {
+        let keyContent = '';
+        if (key.imageData && key.imageData.startsWith('data:image/')) {
+            keyContent = `<img class=\"key-image\" src=\"${key.imageData}\" alt=\"${escapeHtml(key.label || 'Key image')}\" />`;
+        } else if (key.label && key.label.trim() !== '') {
+            keyContent = `<span class=\"key-label\">${escapeHtml(key.label)}</span>`;
+        } else {
+            keyContent = `<span class=\"key-placeholder\"></span>`;
+        }
+        
+        // Extract extra data from description
+        let extraData = {};
+        if (key.description) {
+            try {
+                extraData = JSON.parse(key.description);
+            } catch (e) {
+                extraData = { userDescription: key.description };
+            }
+        }
+        
+        // Add overlay images
+        let overlayImages = '';
+        if (extraData.secondaryImageData) {
+            overlayImages += `<img class=\"key-secondary-image\" src=\"${extraData.secondaryImageData}\" alt=\"Secondary image\" />`;
+        }
+        if (extraData.tertiaryImageData) {
+            overlayImages += `<img class=\"key-tertiary-image\" src=\"${extraData.tertiaryImageData}\" alt=\"Tertiary image\" />`;
+        }
+        
+        // Calculate position based on row, col, and side with proper spacing
+        const keyWidth = 80;  // 4rem keys
+        const keyHeight = 80; // 4rem keys
+        
+        let left, top;
+        
+        if (key.side === 'left') {
+            // Left hand positioning
+            left = key.col * keyWidth;
+            top = key.row * keyHeight + 40; // Added 40px offset to lower the keyboard
+            
+            // Apply column stagger for left hand
+            if (key.col === 2) top -= 13;       // Middle finger column slightly higher
+            if (key.col === 3) top -= 27;       // Ring finger column higher
+            if (key.col === 4) top -= 13;       // Pinky column slightly higher
+            if (key.col === 5) top -= 0;        // Outer column normal
+            
+            // Thumb key positioning
+            if (key.keyType.includes('thumb')) {
+                const thumbIndex = key.col;
+                if (thumbIndex === 0) { left = 293; top = 273; } // Lowered by 40px
+                if (thumbIndex === 1) { left = 373; top = 287; } // Lowered by 40px
+                if (thumbIndex === 2) { left = 453; top = 287; } // Lowered by 40px
+            }
+        } else {
+            // Right hand positioning - offset to the right
+            const rightHandOffset = 700; // Increased gap between hands (was 600)
+            left = rightHandOffset + key.col * keyWidth;
+            top = key.row * keyHeight + 40; // Added 40px offset to lower the keyboard
+            
+            // Apply column stagger for right hand (mirrored)
+            if (key.col === 0) top -= 0;        // Outer column normal
+            if (key.col === 1) top -= 13;       // Pinky column slightly higher
+            if (key.col === 2) top -= 27;       // Ring finger column higher
+            if (key.col === 3) top -= 13;       // Middle finger column slightly higher
+            if (key.col === 4) top -= 0;        // Index finger normal
+            if (key.col === 5) top -= 0;        // Index finger normal
+            
+            // Thumb key positioning
+            if (key.keyType.includes('thumb')) {
+                const thumbIndex = key.col;
+                if (thumbIndex === 0) { left = rightHandOffset - 53; top = 287; } // Lowered by 40px
+                if (thumbIndex === 1) { left = rightHandOffset + 27; top = 287; } // Lowered by 40px
+                if (thumbIndex === 2) { left = rightHandOffset + 107; top = 273; } // Lowered by 40px
+            }
+        }
+        
+        // Get tooltip text from description
+        let tooltipText = 'Click to add image';
+        if (key.label && key.label.trim() !== '') {
+            tooltipText = key.label;
+        }
+        if (extraData.userDescription) {
+            tooltipText = extraData.userDescription;
+        }
+        
+        // Special styling for different key types
+        let keyClass = `key ${key.keyType}`;
+        let backgroundColor = key.color || '#ffffff';
+        
+        // Use light grey for blank keys
+        if (isBlankKey(key)) {
+            backgroundColor = '#e0e0e0';
+        }
+        
+        let keyStyle = `background-color: ${backgroundColor}; left: ${left}px; top: ${top}px; position: absolute;`;
+        
+        // Apply rotations for thumb keys
+        if (key.id === 'L32') keyStyle += ' transform: rotate(25deg);';  // Left spacebar thumb
+        if (key.id === 'R30') keyStyle += ' transform: rotate(-25deg);'; // Right enter thumb
+        if (key.id === 'L31') keyStyle += ' transform: rotate(10deg);';  // Left lower thumb
+        if (key.id === 'R31') keyStyle += ' transform: rotate(-10deg);'; // Right raise thumb
+        
+        return `
+            <div class=\"${keyClass}\" 
+                 data-key-id=\"${key.id}\" 
+                 style=\"${keyStyle}\"
+                 title=\"${tooltipText}\">
+                ${keyContent}
+                ${overlayImages}
+            </div>
+        `;
+    }).join('');
 }
 
 function renderTenkeylessKeyboard(container) {
@@ -758,10 +1459,10 @@ function renderAllTenkeylessKeys(keys) {
         let keyContent = '';
         if (key.imageData && key.imageData.startsWith('data:image/')) {
             keyContent = `<img class="key-image" src="${key.imageData}" alt="${escapeHtml(key.label || 'Key image')}" />`;
-        } else if (key.label) {
+        } else if (key.label && key.label.trim() !== '') {
             keyContent = `<span class="key-label">${escapeHtml(key.label)}</span>`;
         } else {
-            keyContent = `<span class="key-placeholder">+</span>`;
+            keyContent = `<span class="key-placeholder"></span>`;
         }
         
         // Extract extra data from description
@@ -783,9 +1484,9 @@ function renderAllTenkeylessKeys(keys) {
             overlayImages += `<img class="key-tertiary-image" src="${extraData.tertiaryImageData}" alt="Tertiary image" />`;
         }
         
-        // Calculate position based on row and col - proper tenkeyless spacing with row stagger
-        const keyWidth = 60; 
-        const keyHeight = 60; 
+        // Calculate position based on row and col - proper tenkeyless spacing scaled for 4rem keys
+        const keyWidth = 80;  // Scaled up from 60px for 4rem keys
+        const keyHeight = 80; // Scaled up from 60px for 4rem keys
         let left = key.col * keyWidth;
         let top = key.row * keyHeight;
         
@@ -862,30 +1563,40 @@ function renderAllTenkeylessKeys(keys) {
         }
         
         // Get tooltip text from description
-        let tooltipText = key.label || 'Click to add image';
+        let tooltipText = 'Click to add image';
+        if (key.label && key.label.trim() !== '') {
+            tooltipText = key.label;
+        }
         if (extraData.userDescription) {
             tooltipText = extraData.userDescription;
         }
         
         // Special styling for different key types
         let keyClass = `key ${key.keyType}`;
-        let keyStyle = `background-color: ${key.color}; left: ${left}px; top: ${top}px; position: absolute;`;
+        let backgroundColor = key.color || '#ffffff';
         
-        // Special widths for certain keys (adjust based on stagger)
+        // Use light grey for blank keys (no image and no user-modified content)
+        if (isBlankKey(key)) {
+            backgroundColor = '#e0e0e0';
+        }
+        
+        let keyStyle = `background-color: ${backgroundColor}; left: ${left}px; top: ${top}px; position: absolute;`;
+        
+        // Special widths for certain keys (scaled up for 4rem keys)
         if (key.keyType === 'spacebar') {
-            keyStyle += ' width: 410px;'; // Spacebar width to just reach right Alt
+            keyStyle += ' width: 547px;'; // Spacebar width scaled up (410px * 80/60)
         } else if (key.id === 'BACKSPACE') {
-            keyStyle += ' width: 90px;';
+            keyStyle += ' width: 120px;'; // Scaled up (90px * 80/60)
         } else if (key.id === 'TAB') {
-            keyStyle += ' width: 90px;';
+            keyStyle += ' width: 120px;'; // Scaled up (90px * 80/60)
         } else if (key.id === 'CAPS') {
-            keyStyle += ' width: 100px;';
+            keyStyle += ' width: 133px;'; // Scaled up (100px * 80/60)
         } else if (key.id === 'ENTER') {
-            keyStyle += ' width: 120px;';
+            keyStyle += ' width: 160px;'; // Scaled up (120px * 80/60)
         } else if (key.id === 'LSHIFT') {
-            keyStyle += ' width: 120px;';
+            keyStyle += ' width: 160px;'; // Scaled up (120px * 80/60)
         } else if (key.id === 'RSHIFT') {
-            keyStyle += ' width: 140px;';
+            keyStyle += ' width: 187px;'; // Scaled up (140px * 80/60)
         }
         
         return `
@@ -907,74 +1618,74 @@ function renderKeyGrid(keys, side) {
     
     let gridHtml = '';
     
-    // Define exact Corne layout positions based on corne.png
+    // Define exact Corne layout positions scaled for 4rem keys (was 3rem, now 33% bigger)
     const corneLayout = {
         left: {
-            // Left hand positions - should match RIGHT side of corne.png (since we're looking at it from user perspective)
+            // Left hand positions - scaled up for bigger keys
             positions: [
                 // Column 0 (leftmost for left hand)
-                {col: 0, row: 0, x: 0, y: 30},
-                {col: 0, row: 1, x: 0, y: 90},
-                {col: 0, row: 2, x: 0, y: 150},
+                {col: 0, row: 0, x: 0, y: 40},
+                {col: 0, row: 1, x: 0, y: 120},
+                {col: 0, row: 2, x: 0, y: 200},
                 // Column 1
-                {col: 1, row: 0, x: 60, y: 30},
-                {col: 1, row: 1, x: 60, y: 90},
-                {col: 1, row: 2, x: 60, y: 150},
+                {col: 1, row: 0, x: 80, y: 40},
+                {col: 1, row: 1, x: 80, y: 120},
+                {col: 1, row: 2, x: 80, y: 200},
                 // Column 2
-                {col: 2, row: 0, x: 120, y: 20},
-                {col: 2, row: 1, x: 120, y: 80},
-                {col: 2, row: 2, x: 120, y: 140},
+                {col: 2, row: 0, x: 160, y: 27},
+                {col: 2, row: 1, x: 160, y: 107},
+                {col: 2, row: 2, x: 160, y: 187},
                 // Column 3
-                {col: 3, row: 0, x: 180, y: 0},
-                {col: 3, row: 1, x: 180, y: 60},
-                {col: 3, row: 2, x: 180, y: 120},
+                {col: 3, row: 0, x: 240, y: 0},
+                {col: 3, row: 1, x: 240, y: 80},
+                {col: 3, row: 2, x: 240, y: 160},
                 // Column 4
-                {col: 4, row: 0, x: 240, y: 10},
-                {col: 4, row: 1, x: 240, y: 70},
-                {col: 4, row: 2, x: 240, y: 130},
+                {col: 4, row: 0, x: 320, y: 13},
+                {col: 4, row: 1, x: 320, y: 93},
+                {col: 4, row: 2, x: 320, y: 173},
                 // Column 5 (rightmost on left half)
-                {col: 5, row: 0, x: 300, y: 20},
-                {col: 5, row: 1, x: 300, y: 80},
-                {col: 5, row: 2, x: 300, y: 140},
+                {col: 5, row: 0, x: 400, y: 27},
+                {col: 5, row: 1, x: 400, y: 107},
+                {col: 5, row: 2, x: 400, y: 187},
             ],
             thumbs: [
-                {col: 0, x: 220, y: 190},
-                {col: 1, x: 280, y: 200},
-                {col: 2, x: 340, y: 200}
+                {col: 0, x: 293, y: 253},
+                {col: 1, x: 373, y: 267},
+                {col: 2, x: 453, y: 267}
             ]
         },
         right: {
-            // Right hand positions - should match LEFT side of corne.png
+            // Right hand positions - scaled up for bigger keys
             positions: [
                 // Column 0 (leftmost on right half)
-                {col: 0, row: 0, x: 0, y: 20},
-                {col: 0, row: 1, x: 0, y: 80},
-                {col: 0, row: 2, x: 0, y: 140},
+                {col: 0, row: 0, x: 0, y: 27},
+                {col: 0, row: 1, x: 0, y: 107},
+                {col: 0, row: 2, x: 0, y: 187},
                 // Column 1
-                {col: 1, row: 0, x: 60, y: 10},
-                {col: 1, row: 1, x: 60, y: 70},
-                {col: 1, row: 2, x: 60, y: 130},
+                {col: 1, row: 0, x: 80, y: 13},
+                {col: 1, row: 1, x: 80, y: 93},
+                {col: 1, row: 2, x: 80, y: 173},
                 // Column 2
-                {col: 2, row: 0, x: 120, y: 0},
-                {col: 2, row: 1, x: 120, y: 60},
-                {col: 2, row: 2, x: 120, y: 120},
+                {col: 2, row: 0, x: 160, y: 0},
+                {col: 2, row: 1, x: 160, y: 80},
+                {col: 2, row: 2, x: 160, y: 160},
                 // Column 3
-                {col: 3, row: 0, x: 180, y: 20},
-                {col: 3, row: 1, x: 180, y: 80},
-                {col: 3, row: 2, x: 180, y: 140},
+                {col: 3, row: 0, x: 240, y: 27},
+                {col: 3, row: 1, x: 240, y: 107},
+                {col: 3, row: 2, x: 240, y: 187},
                 // Column 4
-                {col: 4, row: 0, x: 240, y: 30},
-                {col: 4, row: 1, x: 240, y: 90},
-                {col: 4, row: 2, x: 240, y: 150},
+                {col: 4, row: 0, x: 320, y: 40},
+                {col: 4, row: 1, x: 320, y: 120},
+                {col: 4, row: 2, x: 320, y: 200},
                 // Column 5 (rightmost)
-                {col: 5, row: 0, x: 300, y: 30},
-                {col: 5, row: 1, x: 300, y: 90},
-                {col: 5, row: 2, x: 300, y: 150},
+                {col: 5, row: 0, x: 400, y: 40},
+                {col: 5, row: 1, x: 400, y: 120},
+                {col: 5, row: 2, x: 400, y: 200},
             ],
             thumbs: [
-                {col: 0, x: -40, y: 200},
-                {col: 1, x: 20, y: 200},
-                {col: 2, x: 80, y: 190}
+                {col: 0, x: -53, y: 267},
+                {col: 1, x: 27, y: 267},
+                {col: 2, x: 107, y: 253}
             ]
         }
     };
@@ -990,10 +1701,10 @@ function renderKeyGrid(keys, side) {
         let keyContent = '';
         if (key.imageData && key.imageData.startsWith('data:image/')) {
             keyContent = `<img class="key-image" src="${key.imageData}" alt="${escapeHtml(key.label || 'Key image')}" />`;
-        } else if (key.label) {
+        } else if (key.label && key.label.trim() !== '') {
             keyContent = `<span class="key-label">${escapeHtml(key.label)}</span>`;
         } else {
-            keyContent = `<span class="key-placeholder">+</span>`;
+            keyContent = `<span class="key-placeholder"></span>`;
         }
         
         // Extract extra data from description
@@ -1018,11 +1729,20 @@ function renderKeyGrid(keys, side) {
             overlayImages += `<img class="key-tertiary-image" src="${extraData.tertiaryImageData}" alt="Tertiary image" />`;
         }
         
-        const left = key.isCustomPosition ? key.customX : position.x;
-        const top = key.isCustomPosition ? key.customY : position.y;
+        const left = position.x;
+        const top = position.y;
+        
+        // Get background color - use light grey for blank keys
+        let backgroundColor = key.color || '#ffffff';
+        if (isBlankKey(key)) {
+            backgroundColor = '#e0e0e0';
+        }
         
         // Get tooltip text from description
-        let tooltipText = key.label || 'Click to add image';
+        let tooltipText = 'Click to add image';
+        if (key.label && key.label.trim() !== '') {
+            tooltipText = key.label;
+        }
         if (extraData.userDescription) {
             tooltipText = extraData.userDescription;
         } else if (key.description && !extraData.userDescription) {
@@ -1040,7 +1760,7 @@ function renderKeyGrid(keys, side) {
         gridHtml += `
             <div class="key ${key.keyType}" 
                  data-key-id="${key.id}" 
-                 style="background-color: ${key.color}; left: ${left}px; top: ${top}px;"
+                 style="background-color: ${backgroundColor}; left: ${left}px; top: ${top}px;"
                  title="${tooltipText}">
                 ${keyContent}
                 ${overlayImages}
@@ -1056,10 +1776,10 @@ function renderKeyGrid(keys, side) {
         let keyContent = '';
         if (key.imageData && key.imageData.startsWith('data:image/')) {
             keyContent = `<img class="key-image" src="${key.imageData}" alt="${escapeHtml(key.label || 'Key image')}" />`;
-        } else if (key.label) {
+        } else if (key.label && key.label.trim() !== '') {
             keyContent = `<span class="key-label">${escapeHtml(key.label)}</span>`;
         } else {
-            keyContent = `<span class="key-placeholder">+</span>`;
+            keyContent = `<span class="key-placeholder"></span>`;
         }
         
         // Extract extra data from description
@@ -1084,11 +1804,20 @@ function renderKeyGrid(keys, side) {
             overlayImages += `<img class="key-tertiary-image" src="${extraData.tertiaryImageData}" alt="Tertiary image" />`;
         }
         
-        const left = key.isCustomPosition ? key.customX : thumbPos.x;
-        const top = key.isCustomPosition ? key.customY : thumbPos.y;
+        const left = thumbPos.x;
+        const top = thumbPos.y;
+        
+        // Get background color - use light grey for blank keys
+        let backgroundColor = key.color || '#ffffff';
+        if (isBlankKey(key)) {
+            backgroundColor = '#e0e0e0';
+        }
         
         // Get tooltip text from description
-        let tooltipText = key.label || 'Click to add image';
+        let tooltipText = 'Click to add image';
+        if (key.label && key.label.trim() !== '') {
+            tooltipText = key.label;
+        }
         if (extraData.userDescription) {
             tooltipText = extraData.userDescription;
         } else if (key.description && !extraData.userDescription) {
@@ -1106,7 +1835,7 @@ function renderKeyGrid(keys, side) {
         gridHtml += `
             <div class="key ${key.keyType}" 
                  data-key-id="${key.id}" 
-                 style="background-color: ${key.color}; left: ${left}px; top: ${top}px;"
+                 style="background-color: ${backgroundColor}; left: ${left}px; top: ${top}px;"
                  title="${tooltipText}">
                 ${keyContent}
                 ${overlayImages}
@@ -1167,13 +1896,27 @@ function renderModifierPanel() {
         modifierPanel.style.display = 'block';
     }
     
-    // Ensure activeModifiers and availableModifiers are initialized
-    if (!Array.isArray(activeModifiers)) activeModifiers = [];
-    if (!Array.isArray(availableModifiers)) availableModifiers = ['ctrl', 'shift', 'alt', 'gui'];
+    // Ensure activeModifiers and availableModifiers are initialized as arrays
+    if (!Array.isArray(activeModifiers)) {
+        console.warn('activeModifiers is not an array, initializing:', activeModifiers);
+        activeModifiers = [];
+    }
+    if (!Array.isArray(availableModifiers)) {
+        console.warn('availableModifiers is not an array, initializing:', availableModifiers);
+        availableModifiers = ['ctrl', 'shift', 'alt', 'gui'];
+    }
+    if (!Array.isArray(customModifiers)) {
+        console.warn('customModifiers is not an array, initializing:', customModifiers);
+        customModifiers = [];
+    }
     
     // Display current active modifiers
     const displayText = activeModifiers.length > 0 
-        ? activeModifiers.map(mod => mod.charAt(0).toUpperCase() + mod.slice(1)).join(' + ')
+        ? activeModifiers.map(mod => {
+            // Ensure mod is a string before using string methods
+            const safeMod = String(mod || '');
+            return safeMod.charAt(0).toUpperCase() + safeMod.slice(1);
+          }).join(' + ')
         : 'None';
     
     displayContainer.innerHTML = `
@@ -1182,20 +1925,62 @@ function renderModifierPanel() {
         </div>
     `;
     
-    // Render modifier checkboxes
-    selectorContainer.innerHTML = availableModifiers.map(modifier => `
-        <label class="modifier-checkbox">
-            <input type="checkbox" value="${modifier}" ${activeModifiers.includes(modifier) ? 'checked' : ''}>
-            <span class="modifier-label">${modifier.charAt(0).toUpperCase() + modifier.slice(1)}</span>
-        </label>
-    `).join('');
+    // Combine built-in and custom modifiers
+    const allModifiers = [...availableModifiers, ...customModifiers.map(m => m.name)];
     
-    // Add change handlers
-    selectorContainer.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
-        checkbox.onchange = async () => {
-            // Get all checked modifiers
-            const checkedBoxes = selectorContainer.querySelectorAll('input[type="checkbox"]:checked');
-            const newModifiers = Array.from(checkedBoxes).map(cb => cb.value);
+    // Render big modifier buttons + add button
+    selectorContainer.innerHTML = allModifiers.map(modifier => {
+        const isActive = activeModifiers.includes(modifier);
+        // Ensure modifier is a string before using string methods
+        const safeModifier = String(modifier || '');
+        const modifierName = safeModifier.charAt(0).toUpperCase() + safeModifier.slice(1);
+        
+        // Check if this is a custom modifier (not built-in)
+        const isCustomModifier = !availableModifiers.includes(modifier);
+        
+        return `
+            <button class="modifier-button ${isActive ? 'active' : ''} ${isCustomModifier ? 'custom-modifier' : ''}" 
+                    data-modifier="${modifier}"
+                    title="Toggle ${modifierName} modifier${isCustomModifier ? ' (Custom)' : ''}">
+                <span class="modifier-button-text">${modifierName}</span>
+                ${isCustomModifier ? '<button class="modifier-delete-btn" data-modifier="' + modifier + '" title="Delete custom modifier">×</button>' : ''}
+            </button>
+        `;
+    }).join('') + `
+        <button class="modifier-button add-modifier-button" 
+                id="add-modifier-btn"
+                title="Add custom modifier">
+            <span class="modifier-button-text">+</span>
+        </button>
+    `;
+    
+    // Apply custom colors dynamically
+    applyCustomModifierColors();
+    
+    // Add click handlers to modifier buttons
+    selectorContainer.querySelectorAll('.modifier-button:not(.add-modifier-button)').forEach(button => {
+        button.onclick = async (e) => {
+            // Check if click was on delete button
+            if (e.target.classList.contains('modifier-delete-btn')) {
+                e.stopPropagation();
+                const modifierToDelete = e.target.dataset.modifier;
+                deleteCustomModifier(modifierToDelete);
+                return;
+            }
+            
+            const modifier = button.dataset.modifier;
+            
+            // Toggle modifier state
+            const newModifiers = [...activeModifiers];
+            const index = newModifiers.indexOf(modifier);
+            
+            if (index > -1) {
+                // Remove modifier
+                newModifiers.splice(index, 1);
+            } else {
+                // Add modifier
+                newModifiers.push(modifier);
+            }
             
             try {
                 await SetActiveModifiers(JSON.stringify(newModifiers));
@@ -1205,132 +1990,143 @@ function renderModifierPanel() {
                 renderModifierPanel(); // Update display
             } catch (error) {
                 console.error('Failed to set active modifiers:', error);
-                // Revert checkbox state on failure
-                checkbox.checked = activeModifiers.includes(checkbox.value);
+                // Revert button state on failure
+                renderModifierPanel();
             }
         };
     });
+    
+    // Add click handler for + button
+    const addBtn = document.getElementById('add-modifier-btn');
+    if (addBtn) {
+        addBtn.onclick = () => {
+            showAddModifierModal();
+        };
+    }
+}
+
+function applyCustomModifierColors() {
+    // Remove existing custom style tag if it exists
+    const existingStyle = document.getElementById('custom-modifier-colors');
+    if (existingStyle) {
+        existingStyle.remove();
+    }
+    
+    // Create new style tag with custom colors
+    const styleTag = document.createElement('style');
+    styleTag.id = 'custom-modifier-colors';
+    
+    let css = '';
+    
+    // Ensure availableModifiers is an array
+    if (!Array.isArray(availableModifiers)) {
+        console.warn('availableModifiers is not an array in applyCustomModifierColors:', availableModifiers);
+        availableModifiers = ['ctrl', 'shift', 'alt', 'gui'];
+    }
+    
+    // Built-in modifiers
+    availableModifiers.forEach(modifier => {
+        const color = customModifierColors[modifier] || '#666666';
+        const shadowColor = color;
+        
+        // Active state with solid color
+        css += `
+        .modifier-button[data-modifier="${modifier}"].active {
+            background: ${color} !important;
+            color: ${getContrastColor(color)} !important;
+            box-shadow: 0 6px 20px ${hexToRgba(shadowColor, 0.4)} !important;
+        }
+        `;
+    });
+    
+    // Ensure customModifiers is an array
+    if (!Array.isArray(customModifiers)) {
+        console.warn('customModifiers is not an array in applyCustomModifierColors:', customModifiers);
+        customModifiers = [];
+    }
+    
+    // Custom modifiers
+    customModifiers.forEach(customMod => {
+        const color = customMod.color || '#666666';
+        const shadowColor = color;
+        
+        css += `
+        .modifier-button[data-modifier="${customMod.name}"].active {
+            background: ${color} !important;
+            color: ${getContrastColor(color)} !important;
+            box-shadow: 0 6px 20px ${hexToRgba(shadowColor, 0.4)} !important;
+        }
+        `;
+    });
+    
+    // Add button styling
+    css += `
+    .modifier-button.add-modifier-button {
+        background: linear-gradient(135deg, #e9ecef, #dee2e6) !important;
+        color: #6c757d !important;
+        border: 2px dashed #adb5bd !important;
+        font-size: 1.5rem !important;
+    }
+    .modifier-button.add-modifier-button:hover {
+        background: linear-gradient(135deg, #f8f9fa, #e9ecef) !important;
+        color: #495057 !important;
+        border-color: #6c757d !important;
+        transform: translateY(-1px) !important;
+    }
+    `;
+    
+    styleTag.textContent = css;
+    document.head.appendChild(styleTag);
+}
+
+function hexToRgba(hex, alpha) {
+    // Ensure hex is a string and has the correct format
+    if (!hex || typeof hex !== 'string' || !hex.startsWith('#') || hex.length < 7) {
+        console.warn('Invalid hex color format:', hex);
+        hex = '#666666'; // Fallback to gray
+    }
+    
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+}
+
+function getContrastColor(hexColor) {
+    // Ensure hexColor is a string and has the correct format
+    if (!hexColor || typeof hexColor !== 'string' || !hexColor.startsWith('#') || hexColor.length < 7) {
+        console.warn('Invalid hex color format in getContrastColor:', hexColor);
+        hexColor = '#666666'; // Fallback to gray
+    }
+    
+    // Convert hex to RGB
+    const r = parseInt(hexColor.slice(1, 3), 16);
+    const g = parseInt(hexColor.slice(3, 5), 16);
+    const b = parseInt(hexColor.slice(5, 7), 16);
+    
+    // Calculate luminance
+    const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+    
+    // Return black or white based on luminance
+    return luminance > 0.5 ? '#333333' : '#ffffff';
 }
 
 function addKeyClickHandlers() {
     document.querySelectorAll('.key').forEach(keyElement => {
-        let isDragging = false;
-        let dragStartTime = 0;
-        let dragStartX = 0;
-        let dragStartY = 0;
-        let keyStartX = 0;
-        let keyStartY = 0;
-
-        // Mouse down event
-        keyElement.addEventListener('mousedown', (e) => {
-            dragStartTime = Date.now();
-            dragStartX = e.clientX;
-            dragStartY = e.clientY;
-            
-            // Get key's current position from its style properties (pre-transform coordinates)
-            keyStartX = parseFloat(keyElement.style.left) || 0;
-            keyStartY = parseFloat(keyElement.style.top) || 0;
-            
-            // Ensure absolute positioning
-            if (keyElement.style.position !== 'absolute') {
-                keyElement.style.position = 'absolute';
-                keyElement.style.left = keyStartX + 'px';
-                keyElement.style.top = keyStartY + 'px';
-            }
-            
-            // Prevent text selection
+        keyElement.addEventListener('click', (e) => {
+            // Prevent event bubbling
             e.preventDefault();
-        });
-
-        // Mouse move event
-        const handleMouseMove = (e) => {
-            if (!isDragging) {
-                // Check if we should start dragging (hold for 200ms or move 10px)
-                const timeSinceStart = Date.now() - dragStartTime;
-                const distanceMoved = Math.sqrt(
-                    Math.pow(e.clientX - dragStartX, 2) + 
-                    Math.pow(e.clientY - dragStartY, 2)
-                );
-                
-                if (timeSinceStart > 200 || distanceMoved > 10) {
-                    isDragging = true;
-                    keyElement.classList.add('dragging');
-                    keyElement.style.zIndex = '1000';
-                    // Position is already absolute from mousedown
-                }
-            }
-
-            if (isDragging) {
-                const deltaX = (e.clientX - dragStartX) / zoomLevel;
-                const deltaY = (e.clientY - dragStartY) / zoomLevel;
-                
-                let newX = keyStartX + deltaX;
-                let newY = keyStartY + deltaY;
-                
-                keyElement.style.left = newX + 'px';
-                keyElement.style.top = newY + 'px';
-            }
-        };
-
-        // Mouse up event
-        const handleMouseUp = (e) => {
-            document.removeEventListener('mousemove', handleMouseMove);
-            document.removeEventListener('mouseup', handleMouseUp);
+            e.stopPropagation();
             
-            if (isDragging) {
-                isDragging = false;
-                keyElement.classList.remove('dragging');
-                keyElement.style.zIndex = '';
-                
-                // Save the new position
-                saveKeyPosition(keyElement);
-            } else {
-                // If not dragging, treat as click
-                const keyId = keyElement.dataset.keyId;
-                const key = currentKeys.find(k => k.id === keyId);
-                if (key) {
-                    showKeyEditor(key);
-                }
+            const keyId = keyElement.dataset.keyId;
+            const key = currentKeys.find(k => k.id === keyId);
+            if (key) {
+                showKeyEditor(key);
             }
-        };
-
-        // Add global event listeners when mouse is pressed
-        keyElement.addEventListener('mousedown', () => {
-            document.addEventListener('mousemove', handleMouseMove);
-            document.addEventListener('mouseup', handleMouseUp);
         });
     });
 }
 
-async function saveKeyPosition(keyElement) {
-    const keyId = keyElement.dataset.keyId;
-    const key = currentKeys.find(k => k.id === keyId);
-    
-    if (key) {
-        // Update key position in data relative to the keys-grid container
-        const container = keyElement.closest('.keys-grid');
-        const containerRect = container.getBoundingClientRect();
-        const keyRect = keyElement.getBoundingClientRect();
-        
-        // Store position as custom properties
-        key.customX = keyRect.left - containerRect.left;
-        key.customY = keyRect.top - containerRect.top;
-        key.isCustomPosition = true;
-        
-        try {
-            // Update the key (this handles both base layer and modifier combinations)
-            if (!activeModifiers || activeModifiers.length === 0) {
-                await UpdateKey(JSON.stringify(key));
-            } else {
-                await UpdateModifierKey(JSON.stringify(key));
-            }
-            
-            console.log('Key position saved:', keyId, key.customX, key.customY);
-        } catch (error) {
-            console.error('Failed to save key position:', error);
-        }
-    }
-}
 
 function showKeyEditor(key) {
     const modal = document.getElementById('key-editor-modal');
@@ -1531,6 +2327,9 @@ function addToKeyPaletteHistory(key) {
         // Save to localStorage for persistence
         localStorage.setItem('keyPaletteHistory', JSON.stringify(keyPaletteHistory));
         console.log('Added design to palette history:', design.id);
+        
+        // Refresh persistent palette
+        renderPersistentPalette();
     }
 }
 
@@ -1545,6 +2344,546 @@ function loadKeyPaletteHistory() {
         console.error('Failed to load palette history:', error);
         keyPaletteHistory = [];
     }
+}
+
+function setupPersistentPalette() {
+    const palettePanel = document.getElementById('palette-panel');
+    const toggleBtn = document.getElementById('toggle-palette-btn');
+    const showPaletteBtn = document.getElementById('show-palette-btn');
+    const searchInput = document.getElementById('palette-search-input');
+    const sortBtn = document.getElementById('palette-sort-btn');
+    const resizeHandle = document.getElementById('palette-resize-handle');
+    
+    if (!palettePanel || !toggleBtn || !showPaletteBtn || !searchInput || !sortBtn || !resizeHandle) {
+        console.warn('Persistent palette elements not found');
+        return;
+    }
+    
+    // Toggle palette visibility
+    toggleBtn.onclick = () => {
+        hidePalette();
+    };
+    
+    // Show palette button click handler
+    showPaletteBtn.onclick = () => {
+        showPalette();
+    };
+    
+    // Search functionality
+    searchInput.addEventListener('input', (e) => {
+        const searchTerm = e.target.value.toLowerCase().trim();
+        filterPaletteKeys(searchTerm);
+    });
+    
+    // Sort toggle functionality
+    let currentSortType = 'time'; // Default to time sorting
+    sortBtn.addEventListener('click', () => {
+        // Toggle between time and color sorting
+        currentSortType = currentSortType === 'time' ? 'color' : 'time';
+        
+        // Update button appearance and text
+        if (currentSortType === 'color') {
+            sortBtn.innerHTML = '🎨 Color';
+            sortBtn.classList.add('active-color');
+            sortBtn.title = 'Toggle sort: Color / Time';
+        } else {
+            sortBtn.innerHTML = '📅 Time';
+            sortBtn.classList.remove('active-color');
+            sortBtn.title = 'Toggle sort: Time / Color';
+        }
+        
+        // Apply new sorting
+        sortPaletteKeys(currentSortType);
+    });
+    
+    // Clear search on escape
+    searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            searchInput.value = '';
+            filterPaletteKeys('');
+        }
+    });
+    
+    // Setup resize functionality
+    setupPaletteResize(resizeHandle, palettePanel);
+    
+    // Initial render
+    renderPersistentPalette();
+}
+
+function setupPaletteResize(resizeHandle, palettePanel) {
+    let isResizing = false;
+    let startY = 0;
+    let startHeight = 0;
+    
+    resizeHandle.addEventListener('mousedown', (e) => {
+        isResizing = true;
+        startY = e.clientY;
+        startHeight = palettePanel.offsetHeight;
+        document.body.style.cursor = 'ns-resize';
+        document.body.style.userSelect = 'none';
+        
+        e.preventDefault();
+    });
+    
+    document.addEventListener('mousemove', (e) => {
+        if (!isResizing) return;
+        
+        const deltaY = startY - e.clientY; // Inverted because we're resizing from bottom
+        const newHeight = Math.min(Math.max(startHeight + deltaY, 120), window.innerHeight * 0.6);
+        
+        palettePanel.style.height = newHeight + 'px';
+        updateMainContentHeight(newHeight);
+        
+        e.preventDefault();
+    });
+    
+    document.addEventListener('mouseup', () => {
+        if (isResizing) {
+            isResizing = false;
+            document.body.style.cursor = '';
+            document.body.style.userSelect = '';
+            
+            // Save the height preference
+            const currentHeight = palettePanel.offsetHeight;
+            localStorage.setItem('paletteHeight', currentHeight.toString());
+        }
+    });
+    
+    // Load saved height and set initial position
+    const savedHeight = localStorage.getItem('paletteHeight');
+    if (savedHeight) {
+        const height = Math.min(Math.max(parseInt(savedHeight), 120), window.innerHeight * 0.6);
+        palettePanel.style.height = height + 'px';
+        updateMainContentHeight(height);
+    } else {
+        // Set initial height for main content layout
+        updateMainContentHeight(palettePanel.offsetHeight);
+    }
+    
+    // Check if palette starts hidden and adjust main content accordingly
+    if (palettePanel.classList.contains('hidden')) {
+        updateMainContentHeight(0);
+    }
+}
+
+function updateMainContentHeight(paletteHeight) {
+    document.documentElement.style.setProperty('--palette-height', paletteHeight + 'px');
+}
+
+function hidePalette() {
+    const palettePanel = document.getElementById('palette-panel');
+    const showPaletteBtn = document.getElementById('show-palette-btn');
+    
+    if (palettePanel && showPaletteBtn) {
+        palettePanel.classList.add('hidden');
+        showPaletteBtn.style.display = 'block';
+        
+        // Update main content height when palette is hidden
+        updateMainContentHeight(0);
+    }
+}
+
+function showPalette() {
+    const palettePanel = document.getElementById('palette-panel');
+    const showPaletteBtn = document.getElementById('show-palette-btn');
+    
+    if (palettePanel && showPaletteBtn) {
+        palettePanel.classList.remove('hidden');
+        showPaletteBtn.style.display = 'none';
+        
+        // Restore main content height when palette is shown
+        const currentHeight = palettePanel.offsetHeight;
+        updateMainContentHeight(currentHeight);
+    }
+}
+
+function renderPersistentPalette() {
+    const paletteGrid = document.getElementById('persistent-palette-grid');
+    const emptyState = document.getElementById('palette-empty-state');
+    const sortBtn = document.getElementById('palette-sort-btn');
+    
+    if (!paletteGrid || !emptyState) {
+        console.warn('Persistent palette grid elements not found');
+        return;
+    }
+    
+    // Clear existing content
+    paletteGrid.innerHTML = '';
+    
+    if (keyPaletteHistory.length === 0) {
+        emptyState.style.display = 'block';
+        return;
+    }
+    
+    emptyState.style.display = 'none';
+    
+    // Get current sort type from button state (default to time)
+    const currentSort = (sortBtn && sortBtn.classList.contains('active-color')) ? 'color' : 'time';
+    let sortedDesigns = [...keyPaletteHistory];
+    
+    // Apply sorting
+    if (currentSort === 'time') {
+        // Sort by timestamp (newest first)
+        sortedDesigns.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    } else if (currentSort === 'color') {
+        // Sort by color (group similar colors together)
+        sortedDesigns.sort((a, b) => {
+            const colorA = a.color || '#ffffff';
+            const colorB = b.color || '#ffffff';
+            
+            // Convert to HSL for better color grouping
+            const hslA = hexToHsl(colorA);
+            const hslB = hexToHsl(colorB);
+            
+            // Sort by hue first, then saturation, then lightness
+            if (hslA.h !== hslB.h) {
+                return hslA.h - hslB.h;
+            }
+            if (hslA.s !== hslB.s) {
+                return hslB.s - hslA.s; // Higher saturation first
+            }
+            return hslB.l - hslA.l; // Higher lightness first
+        });
+    }
+    
+    sortedDesigns.forEach((design, index) => {
+        const paletteKeyElement = createPersistentPaletteKeyElement(design, index);
+        paletteGrid.appendChild(paletteKeyElement);
+    });
+}
+
+function sortPaletteKeys(sortType) {
+    const paletteGrid = document.getElementById('persistent-palette-grid');
+    const emptyState = document.getElementById('palette-empty-state');
+    const noResultsState = document.getElementById('palette-no-results');
+    
+    if (!paletteGrid || keyPaletteHistory.length === 0) {
+        return;
+    }
+    
+    let sortedDesigns = [...keyPaletteHistory];
+    
+    if (sortType === 'time') {
+        // Sort by timestamp (newest first)
+        sortedDesigns.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    } else if (sortType === 'color') {
+        // Sort by color (group similar colors together)
+        sortedDesigns.sort((a, b) => {
+            const colorA = a.color || '#ffffff';
+            const colorB = b.color || '#ffffff';
+            
+            // Convert to HSL for better color grouping
+            const hslA = hexToHsl(colorA);
+            const hslB = hexToHsl(colorB);
+            
+            // Sort by hue first, then saturation, then lightness
+            if (hslA.h !== hslB.h) {
+                return hslA.h - hslB.h;
+            }
+            if (hslA.s !== hslB.s) {
+                return hslB.s - hslA.s; // Higher saturation first
+            }
+            return hslB.l - hslA.l; // Higher lightness first
+        });
+    }
+    
+    // Clear and re-render with sorted data
+    paletteGrid.innerHTML = '';
+    emptyState.style.display = 'none';
+    noResultsState.style.display = 'none';
+    
+    sortedDesigns.forEach((design, index) => {
+        const paletteKeyElement = createPersistentPaletteKeyElement(design, index);
+        paletteGrid.appendChild(paletteKeyElement);
+    });
+}
+
+// Helper function to convert hex color to HSL
+function hexToHsl(hex) {
+    // Convert hex to RGB
+    const r = parseInt(hex.slice(1, 3), 16) / 255;
+    const g = parseInt(hex.slice(3, 5), 16) / 255;
+    const b = parseInt(hex.slice(5, 7), 16) / 255;
+    
+    const max = Math.max(r, g, b);
+    const min = Math.min(r, g, b);
+    let h, s, l;
+    
+    l = (max + min) / 2;
+    
+    if (max === min) {
+        h = s = 0; // Achromatic
+    } else {
+        const d = max - min;
+        s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+        
+        switch (max) {
+            case r: h = (g - b) / d + (g < b ? 6 : 0); break;
+            case g: h = (b - r) / d + 2; break;
+            case b: h = (r - g) / d + 4; break;
+        }
+        h /= 6;
+    }
+    
+    return {
+        h: Math.round(h * 360),
+        s: Math.round(s * 100),
+        l: Math.round(l * 100)
+    };
+}
+
+function filterPaletteKeys(searchTerm) {
+    const paletteGrid = document.getElementById('persistent-palette-grid');
+    const emptyState = document.getElementById('palette-empty-state');
+    const noResultsState = document.getElementById('palette-no-results');
+    
+    if (!paletteGrid || !emptyState || !noResultsState) {
+        console.warn('Palette filter elements not found');
+        return;
+    }
+    
+    // If no search term, show all keys
+    if (!searchTerm) {
+        renderPersistentPalette();
+        noResultsState.style.display = 'none';
+        return;
+    }
+    
+    // Filter designs based on search term
+    const filteredDesigns = keyPaletteHistory.filter(design => {
+        // Search in label
+        if (design.label && design.label.toLowerCase().includes(searchTerm)) {
+            return true;
+        }
+        
+        // Search in user description from parsed description JSON
+        if (design.description) {
+            try {
+                const extraData = JSON.parse(design.description);
+                if (extraData.userDescription && extraData.userDescription.toLowerCase().includes(searchTerm)) {
+                    return true;
+                }
+            } catch (e) {
+                // If description is not JSON, search in raw description
+                if (design.description.toLowerCase().includes(searchTerm)) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    });
+    
+    // Clear existing content
+    paletteGrid.innerHTML = '';
+    emptyState.style.display = 'none';
+    
+    if (filteredDesigns.length === 0) {
+        noResultsState.style.display = 'block';
+        return;
+    }
+    
+    noResultsState.style.display = 'none';
+    
+    // Sort filtered designs by timestamp (newest first)
+    const sortedFilteredDesigns = filteredDesigns.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    
+    sortedFilteredDesigns.forEach((design, index) => {
+        const paletteKeyElement = createPersistentPaletteKeyElement(design, index);
+        paletteGrid.appendChild(paletteKeyElement);
+    });
+}
+
+function createPersistentPaletteKeyElement(keyData, index) {
+    const keyElement = document.createElement('div');
+    keyElement.className = 'persistent-palette-key';
+    keyElement.style.backgroundColor = keyData.color || '#ffffff';
+    keyElement.draggable = true;
+    keyElement.dataset.keyData = JSON.stringify(keyData);
+    
+    // Extract extra data from description
+    let extraData = {};
+    if (keyData.description) {
+        try {
+            extraData = JSON.parse(keyData.description);
+        } catch (e) {
+            // Not JSON, treat as plain text description
+        }
+    }
+    
+    let keyContent = '';
+    if (keyData.imageData && keyData.imageData.startsWith('data:image/')) {
+        keyContent = `<img class=\"persistent-palette-key-image\" src=\"${keyData.imageData}\" alt=\"${escapeHtml(keyData.label || 'Key image')}\" />`;
+    } else if (keyData.label) {
+        keyContent = `<span class=\"persistent-palette-key-label\">${escapeHtml(keyData.label)}</span>`;
+    } else {
+        keyContent = `<span class=\"persistent-palette-key-label\">?</span>`;
+    }
+    
+    // Add overlay images
+    let overlayImages = '';
+    if (extraData.secondaryImageData) {
+        overlayImages += `<img class=\"persistent-palette-secondary-image\" src=\"${extraData.secondaryImageData}\" alt=\"Secondary\" />`;
+    }
+    if (extraData.tertiaryImageData) {
+        overlayImages += `<img class=\"persistent-palette-tertiary-image\" src=\"${extraData.tertiaryImageData}\" alt=\"Tertiary\" />`;
+    }
+    
+    // Determine text label to show
+    let displayLabel = '';
+    if (extraData.userDescription) {
+        displayLabel = extraData.userDescription;
+    } else if (keyData.label) {
+        displayLabel = keyData.label;
+    } else {
+        displayLabel = 'Untitled';
+    }
+    
+    keyElement.innerHTML = `
+        <div class=\"persistent-palette-key-content\">
+            ${keyContent}
+            <div class=\"persistent-palette-key-overlay-images\">
+                ${overlayImages}
+            </div>
+        </div>
+        <div class=\"persistent-palette-key-text-label\" title=\"${escapeHtml(displayLabel)}\">${escapeHtml(displayLabel)}</div>
+        <button class=\"persistent-palette-key-delete\" title=\"Delete from palette\">×</button>
+    `;
+    
+    // Add drag handlers
+    setupPaletteKeyDragHandlers(keyElement, keyData);
+    
+    // Add delete button handler
+    const deleteBtn = keyElement.querySelector('.persistent-palette-key-delete');
+    deleteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        if (confirm('Delete this design from your palette? This cannot be undone.')) {
+            // Remove from history
+            if (deleteFromKeyPaletteHistory(keyData.id)) {
+                renderPersistentPalette();
+            }
+        }
+    });
+    
+    return keyElement;
+}
+
+function setupPaletteKeyDragHandlers(keyElement, keyData) {
+    keyElement.addEventListener('dragstart', (e) => {
+        keyElement.classList.add('dragging');
+        e.dataTransfer.setData('application/json', JSON.stringify(keyData));
+        e.dataTransfer.effectAllowed = 'copy';
+        
+        // Setup drop zones on all keys
+        setupDropZones();
+    });
+    
+    keyElement.addEventListener('dragend', () => {
+        keyElement.classList.remove('dragging');
+        clearDropZones();
+    });
+}
+
+function setupDropZones() {
+    document.querySelectorAll('.key').forEach(keyEl => {
+        keyEl.classList.add('drop-zone');
+        
+        keyEl.addEventListener('dragover', handleDragOver);
+        keyEl.addEventListener('dragenter', handleDragEnter);
+        keyEl.addEventListener('dragleave', handleDragLeave);
+        keyEl.addEventListener('drop', handleDrop);
+    });
+}
+
+function clearDropZones() {
+    document.querySelectorAll('.key').forEach(keyEl => {
+        keyEl.classList.remove('drop-zone', 'drop-target', 'drop-invalid');
+        
+        keyEl.removeEventListener('dragover', handleDragOver);
+        keyEl.removeEventListener('dragenter', handleDragEnter);
+        keyEl.removeEventListener('dragleave', handleDragLeave);
+        keyEl.removeEventListener('drop', handleDrop);
+    });
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+}
+
+function handleDragEnter(e) {
+    e.preventDefault();
+    e.currentTarget.classList.add('drop-target');
+}
+
+function handleDragLeave(e) {
+    // Only remove if we're actually leaving the element (not entering a child)
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+        e.currentTarget.classList.remove('drop-target');
+    }
+}
+
+async function handleDrop(e) {
+    e.preventDefault();
+    e.currentTarget.classList.remove('drop-target');
+    
+    try {
+        const droppedKeyData = JSON.parse(e.dataTransfer.getData('application/json'));
+        const targetKeyId = e.currentTarget.dataset.keyId;
+        
+        if (!targetKeyId || !droppedKeyData) {
+            console.error('Invalid drop data');
+            return;
+        }
+        
+        // Apply the dropped key design to the target key
+        await applyKeyDesignToTarget(droppedKeyData, targetKeyId);
+        
+        // Visual feedback
+        e.currentTarget.style.transform = 'scale(1.1)';
+        setTimeout(() => {
+            e.currentTarget.style.transform = '';
+        }, 200);
+        
+    } catch (error) {
+        console.error('Failed to handle drop:', error);
+        e.currentTarget.classList.add('drop-invalid');
+        setTimeout(() => {
+            e.currentTarget.classList.remove('drop-invalid');
+        }, 1000);
+    }
+}
+
+async function applyKeyDesignToTarget(sourceKeyData, targetKeyId) {
+    // Find the target key in current keys
+    const targetKey = currentKeys.find(k => k.id === targetKeyId);
+    if (!targetKey) {
+        throw new Error(`Target key ${targetKeyId} not found`);
+    }
+    
+    // Create updated key with source design
+    const updatedKey = { ...targetKey };
+    
+    // Apply visual properties from source
+    updatedKey.label = sourceKeyData.label || '';
+    updatedKey.color = sourceKeyData.color || '#ffffff';
+    updatedKey.imageData = sourceKeyData.imageData || '';
+    updatedKey.description = sourceKeyData.description || '';
+    
+    console.log('Applying design to key:', targetKeyId, updatedKey);
+    
+    // Update the key (handles both base layer and modifier combinations)
+    if (!activeModifiers || activeModifiers.length === 0) {
+        await UpdateKey(JSON.stringify(updatedKey));
+    } else {
+        await UpdateModifierKey(JSON.stringify(updatedKey));
+    }
+    
+    // Reload and refresh UI
+    await loadCurrentLayer();
+    renderKeyboard();
 }
 
 function hasCustomContent(key) {
@@ -1938,32 +3277,6 @@ async function addCustomLayer() {
     }
 }
 
-async function resetKeyPositions() {
-    if (!currentKeys || !Array.isArray(currentKeys)) {
-        console.error('No current keys available to reset');
-        return;
-    }
-
-    // Reset custom position data for all keys
-    for (let key of currentKeys) {
-        if (key.isCustomPosition) {
-            key.customX = 0;
-            key.customY = 0;
-            key.isCustomPosition = false;
-            
-            try {
-                // Update the key (this handles both base layer and modifier combinations)
-                if (!activeModifiers || activeModifiers.length === 0) {
-                    await UpdateKey(JSON.stringify(key));
-                } else {
-                    await UpdateModifierKey(JSON.stringify(key));
-                }
-            } catch (error) {
-                console.error('Failed to reset key position for:', key.id, error);
-            }
-        }
-    }
-}
 
 function escapeHtml(text) {
     const div = document.createElement('div');
@@ -1971,5 +3284,568 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+function isBlankKey(key) {
+    // Check if key has any custom content (user-added images or labels)
+    const hasImage = key.imageData && key.imageData.startsWith('data:image/');
+    const hasLabel = key.label && key.label.trim() !== '';
+    
+    // Key is considered blank if it has no image and no labels
+    return !hasImage && !hasLabel;
+}
+
+function isDefaultLabel(label) {
+    // Since we've cleared all default labels from backend, 
+    // any non-empty label is now considered custom
+    return false;
+}
+
 // Initialize the app
 initializeApp();
+
+// Profile Management Functions
+
+function setupProfileManagement() {
+    const profileBtn = document.getElementById('profile-btn');
+    const profileModal = document.getElementById('profile-management-modal');
+    const addProfileModal = document.getElementById('add-profile-modal');
+    const editProfileModal = document.getElementById('edit-profile-modal');
+    const addNewProfileBtn = document.getElementById('add-new-profile-btn');
+    const cancelAddProfile = document.getElementById('cancel-add-profile');
+    const cancelEditProfile = document.getElementById('cancel-edit-profile');
+    const deleteProfileBtn = document.getElementById('delete-profile-btn');
+    
+    if (!profileBtn || !profileModal || !addProfileModal || !editProfileModal) {
+        console.warn('Profile management elements not found');
+        return;
+    }
+    
+    // Profile button click handler
+    profileBtn.onclick = () => {
+        showProfileManagementModal();
+    };
+    
+    // Add new profile button handler
+    addNewProfileBtn.onclick = () => {
+        profileModal.style.display = 'none';
+        addProfileModal.style.display = 'block';
+    };
+    
+    // Cancel add profile handler
+    cancelAddProfile.onclick = () => {
+        addProfileModal.style.display = 'none';
+        profileModal.style.display = 'block';
+    };
+    
+    // Cancel edit profile handler
+    cancelEditProfile.onclick = () => {
+        editProfileModal.style.display = 'none';
+        profileModal.style.display = 'block';
+    };
+    
+    // Close button handlers for profile modals
+    const profileCloseButtons = [profileModal, addProfileModal, editProfileModal].map(modal => modal?.querySelector('.close')).filter(btn => btn);
+    profileCloseButtons.forEach(closeBtn => {
+        closeBtn.onclick = () => {
+            profileModal.style.display = 'none';
+            addProfileModal.style.display = 'none';
+            editProfileModal.style.display = 'none';
+        };
+    });
+    
+    // Click outside modal to close
+    [profileModal, addProfileModal, editProfileModal].forEach(modal => {
+        if (modal) {
+            modal.onclick = (e) => {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            };
+        }
+    });
+    
+    // Add profile form submission
+    const addProfileForm = document.getElementById('add-profile-form');
+    addProfileForm.onsubmit = async (e) => {
+        e.preventDefault();
+        await createNewProfile();
+    };
+    
+    // Edit profile form submission
+    const editProfileForm = document.getElementById('edit-profile-form');
+    editProfileForm.onsubmit = async (e) => {
+        e.preventDefault();
+        await saveProfileEdits();
+    };
+    
+    // Setup profile editor functionality
+    setupProfileEditor();
+    
+    // Setup add profile form functionality
+    setupAddProfileForm();
+    
+    // Update profile selector button appearance
+    updateProfileSelectorButton();
+}
+
+function updateProfileSelectorButton() {
+    const profileIconText = document.getElementById('profile-icon-text');
+    const profileBtn = document.getElementById('profile-btn');
+    
+    if (!profileIconText || !profileBtn) {
+        return;
+    }
+    
+    if (activeProfile) {
+        // Update icon
+        if (activeProfile.icon && activeProfile.icon.startsWith('data:image/')) {
+            profileIconText.innerHTML = `<img src="${activeProfile.icon}" alt="${activeProfile.name}" style="width: 100%; height: 100%; object-fit: cover; object-position: center; border-radius: 6px;">`;
+        } else {
+            profileIconText.textContent = activeProfile.name.charAt(0).toUpperCase();
+        }
+        
+        // Update background color
+        profileBtn.style.backgroundColor = activeProfile.backgroundColor || '#6366f1';
+        
+        // Update tooltip
+        profileBtn.title = `Switch profiles (Current: ${activeProfile.name})`;
+    } else {
+        // Default appearance
+        profileIconText.textContent = 'P';
+        profileBtn.style.backgroundColor = '#6366f1';
+        profileBtn.title = 'Switch profiles';
+    }
+}
+
+async function showProfileManagementModal() {
+    const profileModal = document.getElementById('profile-management-modal');
+    const profilesGrid = document.getElementById('profiles-grid');
+    
+    if (!profileModal || !profilesGrid) {
+        return;
+    }
+    
+    // Show loading state
+    profilesGrid.innerHTML = `
+        <div class="profiles-loading">
+            <p>Loading profiles...</p>
+        </div>
+    `;
+    
+    profileModal.style.display = 'block';
+    
+    try {
+        // Reload profiles to get latest data
+        await loadProfiles();
+        renderProfilesGrid();
+    } catch (error) {
+        console.error('Failed to load profiles:', error);
+        profilesGrid.innerHTML = `
+            <div class="profiles-error">
+                <p>Error loading profiles: ${error.message}</p>
+                <button onclick="showProfileManagementModal()">Retry</button>
+            </div>
+        `;
+    }
+}
+
+function renderProfilesGrid() {
+    const profilesGrid = document.getElementById('profiles-grid');
+    
+    if (!profilesGrid) {
+        return;
+    }
+    
+    if (!profiles || profiles.length === 0) {
+        profilesGrid.innerHTML = `
+            <div class="profiles-empty">
+                <p>No profiles found.</p>
+            </div>
+        `;
+        return;
+    }
+    
+    profilesGrid.innerHTML = profiles.map(profile => {
+        const isActive = activeProfile && activeProfile.id === profile.id;
+        
+        // Determine icon content
+        let iconContent;
+        if (profile.icon && profile.icon.startsWith('data:image/')) {
+            iconContent = `<img src="${profile.icon}" alt="${profile.name}" class="profile-grid-icon-img">`;
+        } else {
+            iconContent = `<span>${profile.name.charAt(0).toUpperCase()}</span>`;
+        }
+        
+        return `
+            <div class="profile-grid-item-container">
+                <div class="profile-grid-item ${isActive ? 'active' : ''}" 
+                     data-profile-id="${profile.id}"
+                     style="background-color: ${profile.backgroundColor || '#6366f1'};"
+                     onclick="switchToProfile('${profile.id}')">
+                    <div class="profile-grid-icon">
+                        ${iconContent}
+                    </div>
+                    <button class="profile-grid-edit-cogwheel" data-profile-id="${profile.id}" title="Edit profile">
+                        ⚙️
+                    </button>
+                </div>
+                <div class="profile-grid-name">${escapeHtml(profile.name)}</div>
+            </div>
+        `;
+    }).join('');
+    
+    // Add event listeners to profile items
+    setupProfileGridEvents();
+}
+
+function setupProfileGridEvents() {
+    // Edit profile cogwheel buttons
+    document.querySelectorAll('.profile-grid-edit-cogwheel').forEach(btn => {
+        btn.onclick = async (e) => {
+            e.stopPropagation();
+            const profileId = btn.dataset.profileId;
+            openProfileEditor(profileId);
+        };
+    });
+}
+
+// Make switchToProfile globally available for onclick handlers
+window.switchToProfile = switchToProfile;
+
+async function switchToProfile(profileId) {
+    try {
+        await SetActiveProfile(profileId);
+        
+        // Reload application state
+        await loadProfiles();
+        await loadCurrentLayer();
+        await loadLayers();
+        await loadActiveModifiers();
+        await loadKeyboardType();
+        
+        // Update UI
+        updateProfileSelectorButton();
+        renderKeyboard();
+        renderLayerSelector();
+        renderModifierPanel();
+        
+        // Close modal and show success
+        document.getElementById('profile-management-modal').style.display = 'none';
+        
+        console.log('Switched to profile:', profileId);
+        
+    } catch (error) {
+        console.error('Failed to switch profile:', error);
+        alert('Failed to switch profile: ' + error.message);
+    }
+}
+
+async function createNewProfile() {
+    const nameInput = document.getElementById('profile-name-input');
+    const colorInput = document.getElementById('profile-color-input');
+    const previewText = document.getElementById('add-profile-preview-text');
+    
+    if (!nameInput || !colorInput) {
+        return;
+    }
+    
+    const name = nameInput.value.trim();
+    const backgroundColor = colorInput.value;
+    
+    if (!name) {
+        alert('Please enter a profile name');
+        return;
+    }
+    
+    try {
+        // Determine icon data
+        let iconData = '';
+        const imgElement = previewText.querySelector('img');
+        if (imgElement && imgElement.src.startsWith('data:image/')) {
+            iconData = imgElement.src;
+        }
+        
+        // Create the profile
+        const newProfileJson = await CreateNewProfile(name);
+        const newProfile = JSON.parse(newProfileJson);
+        
+        // Update the profile's appearance with icon
+        await UpdateProfileAppearance(newProfile.id, name, backgroundColor, iconData);
+        
+        // Reload profiles
+        await loadProfiles();
+        
+        // Close modals
+        document.getElementById('add-profile-modal').style.display = 'none';
+        document.getElementById('profile-management-modal').style.display = 'none';
+        
+        // Clear form
+        nameInput.value = '';
+        colorInput.value = '#6366f1';
+        document.getElementById('add-color-label').textContent = '#6366f1';
+        document.getElementById('add-profile-icon-input').value = '';
+        document.getElementById('remove-add-profile-icon').style.display = 'none';
+        document.getElementById('add-profile-preview-key').style.backgroundColor = '#6366f1';
+        previewText.innerHTML = 'P';
+        
+        console.log('Created new profile:', newProfile);
+        
+    } catch (error) {
+        console.error('Failed to create profile:', error);
+        alert('Failed to create profile: ' + error.message);
+    }
+}
+
+async function deleteProfile(profileId) {
+    try {
+        await DeleteProfile(profileId);
+        
+        // Reload profiles and update UI
+        await loadProfiles();
+        updateProfileSelectorButton();
+        renderProfilesGrid();
+        
+        // If we deleted the active profile, reload everything
+        if (activeProfile && activeProfile.id === profileId) {
+            await loadCurrentLayer();
+            await loadLayers();
+            await loadActiveModifiers();
+            await loadKeyboardType();
+            renderKeyboard();
+            renderLayerSelector();
+            renderModifierPanel();
+        }
+        
+        console.log('Deleted profile:', profileId);
+        
+    } catch (error) {
+        console.error('Failed to delete profile:', error);
+        alert('Failed to delete profile: ' + error.message);
+    }
+}
+
+function setupAddProfileForm() {
+    const colorInput = document.getElementById('profile-color-input');
+    const colorLabel = document.getElementById('add-color-label');
+    const nameInput = document.getElementById('profile-name-input');
+    const iconInput = document.getElementById('add-profile-icon-input');
+    const removeIconBtn = document.getElementById('remove-add-profile-icon');
+    const previewKey = document.getElementById('add-profile-preview-key');
+    const previewText = document.getElementById('add-profile-preview-text');
+    
+    if (!colorInput || !colorLabel || !nameInput || !iconInput || !previewKey || !previewText) {
+        return;
+    }
+    
+    // Color input handler
+    colorInput.oninput = (e) => {
+        const color = e.target.value;
+        colorLabel.textContent = color.toUpperCase();
+        previewKey.style.backgroundColor = color;
+    };
+    
+    // Name input handler
+    nameInput.oninput = (e) => {
+        const name = e.target.value || 'P';
+        if (!previewText.querySelector('img')) {
+            previewText.textContent = name.charAt(0).toUpperCase();
+        }
+    };
+    
+    // Icon upload handler
+    iconInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const imageData = e.target.result;
+                previewText.innerHTML = `<img src="${imageData}" alt="Profile Icon" style="width: 100%; height: 100%; object-fit: cover; object-position: center; border-radius: 6px;">`;
+                removeIconBtn.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+    
+    // Remove icon handler
+    removeIconBtn.onclick = () => {
+        previewText.innerHTML = nameInput.value ? nameInput.value.charAt(0).toUpperCase() : 'P';
+        iconInput.value = '';
+        removeIconBtn.style.display = 'none';
+    };
+}
+
+let currentEditingProfileId = null;
+
+function setupProfileEditor() {
+    const colorInput = document.getElementById('edit-profile-color-input');
+    const colorLabel = document.getElementById('edit-color-label');
+    const nameInput = document.getElementById('edit-profile-name-input');
+    const iconInput = document.getElementById('edit-profile-icon-input');
+    const removeIconBtn = document.getElementById('remove-profile-icon');
+    const previewKey = document.getElementById('profile-preview-key');
+    const previewText = document.getElementById('profile-preview-text');
+    
+    if (!colorInput || !colorLabel || !nameInput || !iconInput || !previewKey || !previewText) {
+        return;
+    }
+    
+    // Color input handler
+    colorInput.oninput = (e) => {
+        const color = e.target.value;
+        colorLabel.textContent = color.toUpperCase();
+        previewKey.style.backgroundColor = color;
+    };
+    
+    // Name input handler
+    nameInput.oninput = (e) => {
+        const name = e.target.value || 'P';
+        if (!previewText.querySelector('img')) {
+            previewText.textContent = name.charAt(0).toUpperCase();
+        }
+    };
+    
+    // Icon upload handler
+    iconInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const imageData = e.target.result;
+                previewText.innerHTML = `<img src="${imageData}" alt="Profile Icon" style="width: 100%; height: 100%; object-fit: cover; object-position: center; border-radius: 6px;">`;
+                removeIconBtn.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+    
+    // Remove icon handler
+    removeIconBtn.onclick = () => {
+        previewText.innerHTML = nameInput.value ? nameInput.value.charAt(0).toUpperCase() : 'P';
+        iconInput.value = '';
+        removeIconBtn.style.display = 'none';
+    };
+}
+
+function openProfileEditor(profileId) {
+    const profile = profiles.find(p => p.id === profileId);
+    if (!profile) {
+        console.error('Profile not found:', profileId);
+        return;
+    }
+    
+    currentEditingProfileId = profileId;
+    
+    // Populate form fields
+    const nameInput = document.getElementById('edit-profile-name-input');
+    const colorInput = document.getElementById('edit-profile-color-input');
+    const colorLabel = document.getElementById('edit-color-label');
+    const iconInput = document.getElementById('edit-profile-icon-input');
+    const removeIconBtn = document.getElementById('remove-profile-icon');
+    const previewKey = document.getElementById('profile-preview-key');
+    const previewText = document.getElementById('profile-preview-text');
+    
+    if (!nameInput || !colorInput || !previewKey || !previewText) {
+        return;
+    }
+    
+    // Set form values
+    nameInput.value = profile.name;
+    colorInput.value = profile.backgroundColor || '#6366f1';
+    colorLabel.textContent = (profile.backgroundColor || '#6366f1').toUpperCase();
+    
+    // Set preview
+    previewKey.style.backgroundColor = profile.backgroundColor || '#6366f1';
+    
+    if (profile.icon && profile.icon.startsWith('data:image/')) {
+        previewText.innerHTML = `<img src="${profile.icon}" alt="Profile Icon" style="width: 100%; height: 100%; object-fit: cover; object-position: center; border-radius: 6px;">`;
+        removeIconBtn.style.display = 'block';
+    } else {
+        previewText.textContent = profile.name.charAt(0).toUpperCase();
+        removeIconBtn.style.display = 'none';
+    }
+    
+    // Clear file input
+    iconInput.value = '';
+    
+    // Show modal
+    document.getElementById('profile-management-modal').style.display = 'none';
+    document.getElementById('edit-profile-modal').style.display = 'block';
+    
+    // Setup delete handler now that modal is open
+    const deleteBtn = document.getElementById('delete-profile-btn');
+    if (deleteBtn) {
+        deleteBtn.onclick = async () => {
+            if (!currentEditingProfileId) return;
+            
+            const profile = profiles.find(p => p.id === currentEditingProfileId);
+            if (!profile) return;
+            
+            if (profiles.length <= 1) {
+                alert('Cannot delete the last remaining profile.');
+                return;
+            }
+            
+            if (confirm(`Are you sure you want to delete the "${profile.name}" profile? This cannot be undone.`)) {
+                try {
+                    await deleteProfile(currentEditingProfileId);
+                    document.getElementById('edit-profile-modal').style.display = 'none';
+                    document.getElementById('profile-management-modal').style.display = 'block';
+                    renderProfilesGrid();
+                } catch (error) {
+                    alert('Failed to delete profile: ' + error.message);
+                }
+            }
+        };
+    }
+}
+
+async function saveProfileEdits() {
+    if (!currentEditingProfileId) {
+        return;
+    }
+    
+    const nameInput = document.getElementById('edit-profile-name-input');
+    const colorInput = document.getElementById('edit-profile-color-input');
+    const iconInput = document.getElementById('edit-profile-icon-input');
+    const previewText = document.getElementById('profile-preview-text');
+    
+    if (!nameInput || !colorInput) {
+        return;
+    }
+    
+    const name = nameInput.value.trim();
+    const backgroundColor = colorInput.value;
+    
+    if (!name) {
+        alert('Please enter a profile name');
+        return;
+    }
+    
+    try {
+        // Determine icon data
+        let iconData = '';
+        const imgElement = previewText.querySelector('img');
+        if (imgElement && imgElement.src.startsWith('data:image/')) {
+            iconData = imgElement.src;
+        }
+        
+        // Update the profile
+        await UpdateProfileAppearance(currentEditingProfileId, name, backgroundColor, iconData);
+        
+        // Reload profiles
+        await loadProfiles();
+        updateProfileSelectorButton();
+        
+        // Close modal and refresh grid
+        document.getElementById('edit-profile-modal').style.display = 'none';
+        document.getElementById('profile-management-modal').style.display = 'block';
+        renderProfilesGrid();
+        
+        console.log('Profile updated successfully');
+        
+    } catch (error) {
+        console.error('Failed to update profile:', error);
+        alert('Failed to update profile: ' + error.message);
+    } finally {
+        currentEditingProfileId = null;
+    }
+}

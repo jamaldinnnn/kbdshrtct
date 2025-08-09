@@ -3,12 +3,409 @@ html {
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 }
 
+/* Profile Selector Button Styles */
+.profile-selector-btn {
+    position: fixed;
+    top: 80px; /* Just below the header */
+    right: 20px;
+    z-index: 1001;
+}
+
+.profile-btn {
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    font-weight: 600;
+    color: white;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+    background-color: #6366f1;
+}
+
+.profile-btn:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+}
+
+.profile-btn img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 6px;
+}
+
+/* Profile Management Modal Styles */
+.profile-management-content {
+    width: 700px;
+    max-width: 90vw;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.profiles-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+    gap: 12px;
+    margin-bottom: 24px;
+    justify-items: center;
+}
+
+.profile-grid-item-container {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 0;
+}
+
+.profile-grid-item {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 2px solid transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    font-weight: 600;
+    color: white;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.profile-grid-item:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
+
+.profile-grid-item.active {
+    border-color: #22c55e;
+    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.2), 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.profile-grid-item.active::before {
+    content: '';
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 12px;
+    height: 12px;
+    background: #22c55e;
+    border-radius: 50%;
+    border: 2px solid white;
+    z-index: 10;
+}
+
+.profile-grid-icon {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: inherit;
+    font-weight: inherit;
+}
+
+.profile-grid-icon-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 6px;
+}
+
+.profile-grid-name {
+    position: absolute;
+    bottom: -24px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    font-weight: 500;
+    color: #374151;
+    text-align: center;
+    white-space: nowrap;
+    max-width: 100px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Cogwheel edit button in corner */
+.profile-grid-edit-cogwheel {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 24px;
+    height: 24px;
+    background: rgba(0, 0, 0, 0.7);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: all 0.2s ease;
+    z-index: 20;
+    backdrop-filter: blur(4px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.profile-grid-edit-cogwheel:hover {
+    background: rgba(0, 0, 0, 0.9);
+    transform: rotate(45deg) scale(1.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.profile-grid-item:hover .profile-grid-edit-cogwheel {
+    opacity: 1;
+}
+
+/* Hide the old actions completely */
+.profile-grid-actions {
+    display: none;
+}
+
+.profile-grid-switch-btn,
+.profile-grid-delete-btn,
+.profile-grid-edit-btn {
+    display: none;
+}
+
+.profile-actions {
+    text-align: center;
+    padding-top: 16px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.profiles-loading,
+.profiles-error,
+.profiles-empty {
+    text-align: center;
+    padding: 40px 20px;
+    color: #6b7280;
+}
+
+.profiles-error button {
+    margin-top: 12px;
+    padding: 8px 16px;
+    background: #6366f1;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+/* Profile Preview in Forms */
+.profile-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 24px;
+    padding: 20px;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    background: #f9fafb;
+}
+
+.profile-preview-key {
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    font-weight: 600;
+    color: white;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    background-color: #6366f1;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    margin-bottom: 8px;
+    overflow: hidden;
+}
+
+.profile-preview-key img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 6px;
+}
+
+.profile-preview-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #6b7280;
+    margin: 0;
+}
+#add-profile-modal .modal-content {
+    width: 400px;
+    max-width: 90vw;
+}
+
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 500;
+    color: #374151;
+}
+
+.form-group input[type="text"] {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+    transition: border-color 0.2s ease;
+}
+
+.form-group input[type="text"]:focus {
+    outline: none;
+    border-color: #6366f1;
+}
+
+.color-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.color-input-wrapper input[type="color"] {
+    width: 50px;
+    height: 40px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    cursor: pointer;
+    background: none;
+}
+
+.color-input-wrapper .color-label {
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    color: #6b7280;
+    text-transform: uppercase;
+}
+
+.form-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-top: 24px;
+    padding-top: 16px;
+    border-top: 1px solid #e5e7eb;
+}
+
+.form-actions button {
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.form-actions button[type="button"] {
+    background: #f3f4f6;
+    color: #374151;
+    border: 1px solid #d1d5db;
+}
+
+.form-actions button[type="button"]:hover {
+    background: #e5e7eb;
+}
+
+.form-actions button[type="submit"] {
+    background: #6366f1;
+    color: white;
+    border: 1px solid #6366f1;
+}
+
+.form-actions button[type="submit"]:hover {
+    background: #5855eb;
+    border-color: #5855eb;
+}
+
+/* Profile Editor Styles */
+.profile-preview {
+    text-align: center;
+    margin-bottom: 24px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 12px;
+}
+
+.profile-preview-key {
+    width: 80px;
+    height: 80px;
+    border-radius: 8px;
+    margin: 0 auto 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    font-weight: 600;
+    color: white;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+    background: #6366f1;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    transition: all 0.3s ease;
+    overflow: hidden;
+}
+
+.profile-preview-label {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 500;
+    color: #6b7280;
+}
+
+.icon-upload-wrapper {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.icon-upload-wrapper input[type="file"] {
+    flex: 1;
+    padding: 8px;
+    border: 2px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.help-text {
+    margin: 8px 0 0 0;
+    font-size: 12px;
+    color: #6b7280;
+    font-style: italic;
+}
+
 body, #app {
     margin: 0;
     padding: 0;
     height: 100vh;
     background: #444444;
     color: #333;
+    --palette-height: 200px;
 }
 
 .keyboard-app {
@@ -43,19 +440,6 @@ body, #app {
     gap: 2rem;
 }
 
-.zoom-controls {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.zoom-display {
-    min-width: 50px;
-    text-align: center;
-    font-weight: 600;
-    color: #333;
-    font-size: 0.9rem;
-}
 
 .layer-controls {
     display: flex;
@@ -79,6 +463,49 @@ body, #app {
     color: white;
 }
 
+.btn-secondary:disabled {
+    background: #f5f5f5;
+    color: #999;
+    border-color: #ddd;
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.btn-secondary:disabled:hover {
+    background: #f5f5f5;
+    color: #999;
+    border-color: #ddd;
+    transform: none;
+}
+
+/* Settings button */
+.btn-settings {
+    padding: 0.6rem;
+    border: 2px solid #667eea;
+    border-radius: 8px;
+    background: white;
+    color: #667eea;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 48px;
+    height: 48px;
+}
+
+.btn-settings:hover {
+    background: #667eea;
+    color: white;
+    transform: rotate(90deg);
+}
+
+.settings-icon {
+    font-size: 1.2rem;
+    line-height: 1;
+}
+
 #layer-selector label {
     font-weight: 600;
     margin-right: 0.5rem;
@@ -95,20 +522,28 @@ body, #app {
 
 .main-content {
     display: flex;
+    flex-direction: row;
     flex: 1;
-    gap: 2rem;
-    padding: 2rem;
-    overflow: auto;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    overflow: hidden;
+    height: calc(100vh - 70px - var(--palette-height)); /* Dynamic height based on palette */
 }
 
 .modifier-panel {
     background: rgba(255, 255, 255, 0.95);
-    border-radius: 12px;
-    padding: 1.5rem;
+    border-radius: 8px;
+    padding: 1rem;
     width: 200px;
-    height: fit-content;
+    max-height: calc(100vh - 140px); /* Limit height to viewport minus header and palette */
+    min-height: fit-content;
     backdrop-filter: blur(10px);
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+    flex-shrink: 0;
+    order: 1; /* Put modifier panel first (left side) */
+    overflow: hidden; /* Hide overflow on panel itself */
+    display: flex;
+    flex-direction: column;
 }
 
 .modifier-panel h3 {
@@ -121,90 +556,278 @@ body, #app {
 
 .current-modifier {
     margin-bottom: 1rem;
+    flex-shrink: 0; /* Don't shrink this section */
 }
 
 .current-mod-display {
-    padding: 0.8rem;
+    padding: 0.6rem; /* Slightly reduced padding */
     background: rgba(102, 126, 234, 0.1);
     border-radius: 6px;
     text-align: center;
     color: #667eea;
     border: 1px solid rgba(102, 126, 234, 0.2);
+    font-size: 0.9rem; /* Slightly smaller font */
 }
 
 .modifier-selector {
     display: flex;
     flex-direction: column;
-    gap: 0.6rem;
+    gap: 0.8rem;
+    overflow-y: auto; /* Enable vertical scrolling */
+    overflow-x: hidden; /* Disable horizontal scrolling */
+    padding-right: 0.25rem; /* Space for scrollbar */
+    flex: 1; /* Take remaining space in flex container */
 }
 
-.modifier-checkbox {
+/* Custom scrollbar styling for modifier selector */
+.modifier-selector::-webkit-scrollbar {
+    width: 6px;
+}
+
+.modifier-selector::-webkit-scrollbar-track {
+    background: rgba(102, 126, 234, 0.1);
+    border-radius: 3px;
+}
+
+.modifier-selector::-webkit-scrollbar-thumb {
+    background: rgba(102, 126, 234, 0.4);
+    border-radius: 3px;
+}
+
+.modifier-selector::-webkit-scrollbar-thumb:hover {
+    background: rgba(102, 126, 234, 0.6);
+}
+
+/* Big colorful modifier buttons */
+.modifier-button {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    padding: 0.6rem;
-    border-radius: 6px;
+    justify-content: center;
+    padding: 1rem 1.5rem;
+    border: none;
+    border-radius: 12px;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
+    font-weight: 700;
+    font-size: 1.1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    min-height: 60px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
 }
 
-.modifier-checkbox:hover {
-    background: rgba(102, 126, 234, 0.05);
+.modifier-button-text {
+    position: relative;
+    z-index: 1;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
 }
 
-.modifier-checkbox input[type="checkbox"] {
-    width: 16px;
-    height: 16px;
-    accent-color: #667eea;
-    cursor: pointer;
+/* Individual modifier button colors when active */
+.modifier-button[data-modifier="ctrl"].active {
+    background: linear-gradient(135deg, #ff6b6b, #ee5a52);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(238, 90, 82, 0.4);
 }
 
-.modifier-checkbox input[type="checkbox"]:checked + .modifier-label {
-    color: #667eea;
-    font-weight: 600;
+.modifier-button[data-modifier="shift"].active {
+    background: linear-gradient(135deg, #51cf66, #37b24d);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(55, 178, 77, 0.4);
 }
 
-.modifier-label {
-    font-weight: 500;
+.modifier-button[data-modifier="alt"].active {
+    background: linear-gradient(135deg, #ffd43b, #fab005);
     color: #333;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(250, 176, 5, 0.4);
+}
+
+.modifier-button[data-modifier="gui"].active {
+    background: linear-gradient(135deg, #339af0, #1971c2);
+    color: white;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(25, 113, 194, 0.4);
+}
+
+/* Inactive (greyed out) state */
+.modifier-button:not(.active) {
+    background: linear-gradient(135deg, #868e96, #6c757d);
+    color: #adb5bd;
+    transform: translateY(0);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Hover effects */
+.modifier-button:not(.active):hover {
+    background: linear-gradient(135deg, #495057, #343a40);
+    color: #dee2e6;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+.modifier-button.active:hover {
+    transform: translateY(-3px);
+    filter: brightness(1.1);
+}
+
+/* Active press animation */
+.modifier-button:active {
+    transform: translateY(0) scale(0.98);
+    transition: all 0.1s ease;
+}
+
+/* Custom modifier delete button */
+.modifier-delete-btn {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    background: rgba(220, 38, 38, 0.9);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+    font-size: 0.7rem;
+    display: none;
+    align-items: center;
+    justify-content: center;
     transition: all 0.2s ease;
+    z-index: 10;
+    line-height: 1;
+}
+
+.modifier-button.custom-modifier:hover .modifier-delete-btn {
+    display: flex;
+}
+
+.modifier-delete-btn:hover {
+    background: #dc2626;
+    transform: scale(1.1);
+}
+
+/* Color customization panel */
+.modifier-colors-section {
+    margin-top: 2rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(102, 126, 234, 0.2);
+}
+
+.modifier-colors-section h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #333;
+}
+
+.color-panel {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: rgba(102, 126, 234, 0.05);
+    border-radius: 8px;
+    border: 1px solid rgba(102, 126, 234, 0.1);
+}
+
+.color-control-group {
+    margin-bottom: 1.5rem;
+}
+
+.color-control-label {
+    display: block;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.color-inputs {
+    display: flex;
+    gap: 1rem;
+}
+
+.color-input-item {
+    flex: 1;
+    width: 100%;
+}
+
+.color-input-item label {
+    display: block;
+    font-size: 0.8rem;
+    color: #666;
+    margin-bottom: 0.25rem;
+    font-weight: 500;
+}
+
+.color-picker {
+    width: 100%;
+    height: 50px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    padding: 0;
+}
+
+.color-picker:hover {
+    border-color: #667eea;
+    transform: scale(1.02);
+}
+
+.color-picker:focus {
+    outline: none;
+    border-color: #667eea;
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 .keyboard-container {
-    flex: 1;
+    flex: 4; /* Take most of the space */
     display: flex;
     justify-content: center;
-    align-items: flex-start;
+    align-items: flex-start; /* Changed from center to flex-start */
     overflow: hidden;
     position: relative;
-    cursor: grab;
-}
-
-.keyboard-container:active {
-    cursor: grabbing;
+    padding: 0.25rem; /* Minimal top padding */
+    box-sizing: border-box;
+    min-height: 0;
+    order: 2; /* Put keyboard second (after modifier panel) */
 }
 
 .keyboard-layout {
-    max-width: 1200px;
     width: 100%;
+    height: 100%;
+    max-width: none;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* Changed from center to flex-start */
+    transform-origin: center top; /* Changed from center center to center top */
 }
 
 .keyboard-split {
     display: flex;
-    gap: 4rem;
+    gap: 0.5rem; /* Much smaller gap between halves */
     justify-content: center;
-    align-items: flex-start;
+    align-items: center;
+    width: 100%;
+    height: 100%;
 }
 
 .keyboard-half {
     background: transparent;
     border-radius: 0;
-    padding: 3rem;
+    padding: 1vw;
     backdrop-filter: none;
     box-shadow: none;
-    min-width: 450px;
-    min-height: 350px;
+    flex: 1;
+    max-width: 45vw;
     position: relative;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .keyboard-half h3 {
@@ -219,8 +842,11 @@ body, #app {
 /* Keys grid container */
 .keys-grid {
     position: relative;
-    width: 360px;
-    height: 280px;
+    width: 100%;
+    height: 100%;
+    max-width: 667px; /* Scaled up for 4rem keys with proper spacing */
+    max-height: 507px; /* Scaled up for 4rem keys with proper spacing */
+    aspect-ratio: 4/3;
 }
 
 /* Thumb key rotations */
@@ -232,17 +858,9 @@ body, #app {
     transform: rotate(-15deg);
 }
 
-.key.thumb.dragging:nth-child(1) {
-    transform: rotate(15deg) scale(1.05);
-}
-
-.key.thumb.dragging:nth-child(3) {
-    transform: rotate(-15deg) scale(1.05);
-}
-
 .key {
-    width: 3rem;
-    height: 3rem;
+    width: 4rem; /* Increased from 3rem */
+    height: 4rem; /* Increased from 3rem */
     border-radius: 8px;
     border: 2px solid rgba(255, 255, 255, 0.8);
     display: flex;
@@ -285,38 +903,25 @@ body, #app {
     filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.3));
 }
 
-.key.dragging {
-    cursor: grabbing !important;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-    border-color: #667eea;
-    transition: none;
-    transform: scale(1.05);
-}
-
-.key:hover:not(.dragging) {
+.key:hover {
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
     border-color: #667eea;
-    cursor: grab;
 }
 
 .key.thumb {
-    width: 3rem;
-    height: 3rem;
+    width: 4rem; /* Increased from 3rem */
+    height: 4rem; /* Increased from 3rem */
     border-radius: 8px;
 }
 
-/* Special 1.5u height for specific thumb keys */
-.key[data-key-id="L32"],  /* SPC key */
-.key[data-key-id="R30"] { /* Enter key */
-    height: 4.5rem; /* 1.5u vertically (3rem * 1.5) */
-}
-
-/* Rotate thumb keys inwards */
-.key[data-key-id="L32"] { /* SPC key - rotate right (inward) */
+/* Special 1.5u height and rotation for specific thumb keys */
+.keyboard-corne .key[data-key-id="L32"] { /* SPC key - 1.5u and rotate right (inward) */
+    height: 6rem !important; /* 1.5u vertically (4rem * 1.5) */
     transform: rotate(25deg);
 }
 
-.key[data-key-id="R30"] { /* Enter key - rotate left (inward) */
+.keyboard-corne .key[data-key-id="R30"] { /* Enter key - 1.5u and rotate left (inward) */
+    height: 6rem !important; /* 1.5u vertically (4rem * 1.5) */
     transform: rotate(-25deg);
 }
 
@@ -328,26 +933,9 @@ body, #app {
     transform: rotate(-10deg);
 }
 
-/* Maintain rotation when dragging these specific keys */
-.key[data-key-id="L32"].dragging {
-    transform: rotate(25deg) scale(1.05);
-}
-
-.key[data-key-id="R30"].dragging {
-    transform: rotate(-25deg) scale(1.05);
-}
-
-.key[data-key-id="L31"].dragging {
-    transform: rotate(10deg) scale(1.05);
-}
-
-.key[data-key-id="R31"].dragging {
-    transform: rotate(-10deg) scale(1.05);
-}
-
 .key.thumb-1_5u {
-    width: 3rem;
-    height: 3rem;
+    width: 4rem; /* Increased from 3rem */
+    height: 4rem; /* Increased from 3rem */
     border-radius: 8px;
 }
 
@@ -379,7 +967,7 @@ body, #app {
 .key-placeholder {
     font-size: 1.5rem;
     color: #999;
-    opacity: 0.6;
+    opacity: 0;
     font-weight: 300;
 }
 
@@ -443,12 +1031,6 @@ body, #app {
     border-color: #667eea;
     box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
     transform: translateX(-50%) translateY(-2px);
-}
-
-.image-slot.drag-over {
-    border-color: #4ade80;
-    background: linear-gradient(145deg, #2a4a2a, #1a3a1a);
-    box-shadow: 0 4px 20px rgba(74, 222, 128, 0.4);
 }
 
 .image-slot.has-image {
@@ -731,6 +1313,19 @@ body, #app {
     backdrop-filter: blur(4px);
 }
 
+/* Modal z-index hierarchy */
+.modal.primary-modal {
+    z-index: 1000; /* Base level for primary modals like settings */
+}
+
+.modal.secondary-modal {
+    z-index: 1100; /* Higher level for modals that open from primary modals */
+}
+
+.modal.tertiary-modal {
+    z-index: 1200; /* Highest level for modals that open from secondary modals */
+}
+
 .modal-content {
     background: white;
     margin: 10% auto;
@@ -740,6 +1335,43 @@ body, #app {
     max-width: 500px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
     position: relative;
+}
+
+/* Settings Modal */
+.modal-content.settings-content {
+    max-width: 600px;
+    width: 90vw;
+}
+
+.settings-section {
+    margin-bottom: 2rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #eee;
+}
+
+.settings-section:last-child {
+    border-bottom: none;
+}
+
+.settings-section h3 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    color: #333;
+    font-size: 1.1rem;
+    font-weight: 700;
+}
+
+.settings-section .section-description {
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+    margin-top: -0.5rem;
+}
+
+.settings-section .layer-controls {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
 }
 
 /* Override for key editor modal */
@@ -762,35 +1394,53 @@ body, #app {
     right: 2%;
     top: 10%;
     margin: 0;
+    max-height: 80vh; /* Limit modal height */
+    overflow: hidden; /* Hide overflow on modal */
+    display: flex;
+    flex-direction: column; /* Stack header and content */
+    justify-content: flex-start !important; /* Force content to start at top */
+    align-items: stretch; /* Stretch items to fill width */
 }
 
 .key-palette-content h2 {
     color: #fff;
     text-align: center;
-    margin-bottom: 1rem;
+    margin-bottom: 0.5rem; /* Reduced margin */
     font-size: 1.3rem;
     text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+    flex-shrink: 0; /* Don't shrink header */
 }
 
 .palette-header {
     text-align: center;
-    margin-bottom: 1.5rem;
+    margin-bottom: 0.5rem; /* Reduced margin */
     color: #ccc;
     font-size: 0.9rem;
+    flex-shrink: 0; /* Don't shrink header */
 }
 
 .key-palette-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    display: grid !important;
+    grid-template-columns: repeat(4, 1fr); /* Fixed 4 columns to fit modal width */
+    grid-auto-rows: min-content; /* Rows size to content */
     gap: 1rem;
-    max-height: 400px;
-    overflow-y: auto;
     padding: 0.5rem;
+    align-content: start !important; /* Force content to start at top */
+    justify-content: start; /* Also justify to start */
+    overflow-y: auto; /* Vertical scrolling only */
+    overflow-x: hidden; /* No horizontal scrolling */
+    flex: 1; /* Take remaining space in flex container */
+    min-height: 0; /* Allow shrinking */
+    align-items: start; /* Align individual items to start */
+    width: 100%; /* Ensure full width usage */
+    box-sizing: border-box; /* Include padding in width calculations */
 }
 
 .palette-key {
     aspect-ratio: 1;
-    min-height: 80px;
+    min-height: 60px; /* Reduced minimum height */
+    max-width: 100%; /* Ensure key doesn't exceed grid cell */
+    width: 100%; /* Use full grid cell width */
     border-radius: 8px;
     border: 2px solid #555;
     position: relative;
@@ -800,6 +1450,7 @@ body, #app {
     align-items: center;
     justify-content: center;
     overflow: hidden;
+    box-sizing: border-box; /* Include border in size calculations */
 }
 
 .palette-key:hover {
@@ -935,7 +1586,419 @@ body, #app {
     transform: scale(1.1);
 }
 
-/* Responsive Design for Key Palette */
+/* Persistent Key Palette Panel */
+.palette-panel {
+    position: fixed;
+    bottom: 0.5rem; /* Match main-content padding for consistency */
+    left: 250px; /* More space: 0.5rem main padding + 200px width + 0.5rem gap + extra buffer */
+    right: 0.5rem; /* Match main-content padding */
+    height: 200px;
+    min-height: 120px;
+    max-height: 60vh;
+    background: rgba(255, 255, 255, 0.95);
+    border-radius: 8px; /* Match modifier panel rounded corners */
+    backdrop-filter: blur(10px);
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); /* Match modifier panel shadow */
+    z-index: 50; /* Lower than modals but above main content */
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.3s ease;
+    resize: none; /* Disable browser resize */
+}
+
+.palette-panel.hidden {
+    transform: translateY(100%);
+}
+
+.palette-resize-handle {
+    position: absolute;
+    top: -5px;
+    left: 0;
+    right: 0;
+    height: 10px;
+    cursor: ns-resize;
+    z-index: 51; /* Slightly above palette panel */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.resize-grip {
+    width: 40px;
+    height: 4px;
+    background: #667eea;
+    border-radius: 2px;
+    opacity: 0.6;
+    transition: opacity 0.2s ease;
+}
+
+.palette-resize-handle:hover .resize-grip {
+    opacity: 1;
+}
+
+.palette-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid rgba(102, 126, 234, 0.2);
+    background: rgba(102, 126, 234, 0.05);
+    gap: 1rem;
+}
+
+.palette-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #333;
+    flex-shrink: 0;
+}
+
+.palette-search {
+    position: relative;
+    flex: 1;
+    max-width: 200px;
+}
+
+.palette-sort {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.palette-sort label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #333;
+    white-space: nowrap;
+}
+
+.palette-sort-select {
+    padding: 0.4rem 0.6rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.9);
+    font-size: 0.8rem;
+    outline: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.palette-sort-select:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+}
+
+.palette-search-input {
+    width: 100%;
+    padding: 0.5rem 2rem 0.5rem 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 20px;
+    background: rgba(255, 255, 255, 0.9);
+    font-size: 0.85rem;
+    outline: none;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.palette-search-input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.1);
+    background: rgba(255, 255, 255, 1);
+}
+
+.search-icon {
+    position: absolute;
+    right: 0.75rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: #666;
+    font-size: 0.9rem;
+    pointer-events: none;
+}
+
+.palette-controls {
+    display: flex;
+    gap: 0.5rem;
+    flex-shrink: 0;
+}
+
+.palette-controls .btn-secondary {
+    font-size: 0.8rem;
+    padding: 0.3rem 0.6rem;
+}
+
+.palette-sort-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-weight: 500;
+    transition: all 0.2s ease;
+}
+
+.palette-sort-btn:hover {
+    background: #667eea;
+    color: white;
+    transform: translateY(-1px);
+}
+
+.palette-sort-btn.active-color {
+    background: #10b981;
+    color: white;
+    border-color: #059669;
+}
+
+.palette-sort-btn.active-color:hover {
+    background: #059669;
+    border-color: #047857;
+}
+
+.palette-content {
+    flex: 1;
+    position: relative;
+    overflow: hidden;
+}
+
+.palette-grid-container {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overflow-y: auto; /* Vertical scrolling */
+    overflow-x: hidden; /* No horizontal scrolling */
+}
+
+.persistent-palette-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); /* Responsive columns that wrap */
+    grid-auto-rows: min-content; /* Rows size to content */
+    gap: 0.75rem;
+    align-content: start; /* Align content to top */
+    height: 100%;
+    width: 100%;
+    padding: 0.75rem;
+    overflow-y: auto; /* Vertical scrolling */
+    overflow-x: hidden; /* No horizontal scrolling */
+    box-sizing: border-box;
+}
+
+.palette-empty-state {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: #666;
+    font-size: 0.9rem;
+    pointer-events: none;
+}
+
+.palette-empty-state p {
+    margin: 0.25rem 0;
+}
+
+.palette-no-results {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: #666;
+    font-size: 0.9rem;
+    pointer-events: none;
+}
+
+.palette-no-results p {
+    margin: 0.25rem 0;
+}
+
+/* Persistent palette key styling */
+.persistent-palette-key {
+    width: 80px;
+    min-width: 80px;
+    height: 100px; /* Increased height to accommodate label */
+    min-height: 100px;
+    border-radius: 8px;
+    border: 2px solid #ddd;
+    position: relative;
+    cursor: grab;
+    transition: all 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    overflow: hidden;
+    background: #fff;
+    user-select: none;
+}
+
+.persistent-palette-key:hover {
+    border-color: #667eea;
+    box-shadow: 0 4px 15px rgba(102, 126, 234, 0.2);
+    transform: translateY(-2px);
+}
+
+.persistent-palette-key.dragging {
+    cursor: grabbing;
+    transform: scale(0.9) rotate(5deg);
+    opacity: 0.8;
+    z-index: 1000;
+    border-color: #667eea;
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+}
+
+.persistent-palette-key-content {
+    width: 100%;
+    height: 80px; /* Fixed height for key content */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    pointer-events: none;
+}
+
+.persistent-palette-key-image {
+    width: 90%;
+    height: 90%;
+    object-fit: contain;
+    border-radius: 4px;
+}
+
+.persistent-palette-key-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #333;
+    text-align: center;
+    word-break: break-word;
+    line-height: 1.1;
+}
+
+.persistent-palette-key-text-label {
+    width: 100%;
+    padding: 0.25rem;
+    font-size: 0.6rem;
+    font-weight: 500;
+    color: #555;
+    text-align: center;
+    line-height: 1.1;
+    background: rgba(102, 126, 234, 0.05);
+    border-top: 1px solid rgba(102, 126, 234, 0.1);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex-shrink: 0;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Overlay images for persistent palette */
+.persistent-palette-key-overlay-images {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.persistent-palette-secondary-image {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    object-fit: contain;
+    background: transparent;
+    filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.3));
+}
+
+.persistent-palette-tertiary-image {
+    position: absolute;
+    bottom: 2px;
+    right: 2px;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    object-fit: contain;
+    background: transparent;
+    filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.3));
+}
+
+.persistent-palette-key-delete {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    background: rgba(220, 38, 38, 0.9);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    font-size: 0.7rem;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    z-index: 10;
+    pointer-events: auto;
+}
+
+.persistent-palette-key:hover .persistent-palette-key-delete {
+    display: flex;
+}
+
+.persistent-palette-key-delete:hover {
+    background: #dc2626;
+    transform: scale(1.1);
+}
+
+/* Drop zone styling for keys */
+.key.drop-target {
+    border-color: #10b981 !important;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2) !important;
+    background-color: rgba(16, 185, 129, 0.1) !important;
+}
+
+.key.drop-invalid {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2) !important;
+    background-color: rgba(239, 68, 68, 0.1) !important;
+}
+
+/* Show Palette Button (when hidden) */
+.show-palette-btn {
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    z-index: 200;
+    opacity: 0.9;
+    transition: opacity 0.3s ease;
+}
+
+.show-palette-btn:hover {
+    opacity: 1;
+}
+
+.show-palette-btn button {
+    padding: 0.75rem 1rem;
+    font-size: 0.9rem;
+    border-radius: 25px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.95);
+    border: 2px solid #667eea;
+}
+
+.show-palette-btn button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+}
 @media (max-width: 768px) {
     .modal-content.key-palette-content {
         position: relative;
@@ -1108,44 +2171,169 @@ input[type="file"]:hover {
     border-color: #667eea;
 }
 
+/* Custom modifier color selector */
+.modifier-color-selector {
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    position: relative;
+    cursor: pointer;
+}
+
+.modifier-color-selector:hover .color-preview-button {
+    border-color: #667eea;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.modifier-color-selector input[type="color"] {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+    background: transparent;
+    opacity: 0;
+    cursor: pointer;
+    z-index: 10;
+}
+
+.color-preview-button {
+    width: 100%;
+    max-width: 100%;
+    padding: 1rem;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    background: #8b5cf6;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 80px;
+    gap: 0.25rem;
+    position: relative;
+    overflow: hidden;
+    box-sizing: border-box;
+}
+
+.color-preview-text {
+    font-family: monospace;
+    font-weight: 700;
+    font-size: 1.1rem;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    color: white;
+    pointer-events: none;
+}
+
+.color-preview-hint {
+    font-size: 0.8rem;
+    opacity: 0.9;
+    font-weight: 500;
+    color: inherit;
+    pointer-events: none;
+}
+
 /* Responsive Design */
 @media (max-width: 1200px) {
     .keyboard-split {
-        gap: 2rem;
+        gap: 1.5vw;
+    }
+    
+    .main-content {
+        padding: 0.25rem;
     }
 }
 
 @media (max-width: 768px) {
     .main-content {
-        flex-direction: column;
-        padding: 1rem;
+        padding: 0.25rem;
+        gap: 0.25rem;
+        height: calc(100vh - 70px - var(--palette-height)); /* Dynamic height */
+    }
+    
+    .palette-panel {
+        min-height: 100px; /* Smaller minimum on mobile */
+        max-height: 50vh;  /* Lower max height on mobile */
+    }
+    
+    .palette-header {
+        padding: 0.5rem;
+        gap: 0.5rem;
+    }
+    
+    .palette-header h3 {
+        font-size: 1rem;
+    }
+    
+    .palette-search {
+        max-width: 200px;
+    }
+    
+    .palette-search-input {
+        font-size: 0.8rem;
+        padding: 0.4rem 1.8rem 0.4rem 0.6rem;
+    }
+    
+    .persistent-palette-key {
+        width: 60px;
+        height: 80px;
+        min-width: 60px;
+        min-height: 80px;
+    }
+    
+    .persistent-palette-key-content {
+        height: 60px;
+    }
+    
+    .persistent-palette-key-text-label {
+        font-size: 0.55rem;
+        height: 18px;
+        padding: 0.2rem;
+    }
+    
+    .palette-controls .btn-secondary {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.4rem;
+    }
+    
+    .show-palette-btn {
+        bottom: 15px;
+        right: 15px;
+    }
+    
+    .show-palette-btn button {
+        padding: 0.6rem 0.8rem;
+        font-size: 0.8rem;
     }
     
     .modifier-panel {
-        width: 100%;
-        order: 2;
+        padding: 0.5rem;
+        max-height: 100px;
+    }
+    
+    .keyboard-container {
+        padding: 0.1rem;
     }
     
     .keyboard-split {
         flex-direction: column;
-        gap: 2rem;
+        gap: 0.5rem;
         align-items: center;
     }
     
-    .key {
-        width: 2.5rem;
-        height: 2.5rem;
-    }
-    
-    .key.thumb {
-        width: 2.5rem;
-        height: 2.5rem;
-    }
-    
     .app-header {
-        padding: 1rem;
+        padding: 0.5rem;
         flex-direction: column;
-        gap: 1rem;
+        gap: 0.5rem;
+    }
+    
+    .controls {
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.25rem;
     }
 }
 
@@ -1170,40 +2358,143 @@ input[type="file"]:hover {
     min-width: 200px;
 }
 
-/* Tenkeyless keyboard layout - match Corne flexibility */
-.keyboard-tenkeyless {
+/* Corne keyboard layout - responsive design with absolute positioning */
+.keyboard-corne {
     position: relative;
     width: 100%;
     height: 100%;
-    min-height: 500px;
-    overflow: visible; /* Allow dragging beyond bounds like Corne */
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* Changed from center to flex-start */
+    overflow: visible;
 }
 
-.tenkeyless-grid {
+.corne-grid {
     position: relative;
-    width: 100%; /* Flexible width like Corne */
-    height: 100%; /* Flexible height like Corne */
-    min-width: 1200px; /* Minimum to fit all keys */
-    min-height: 400px; /* Minimum for 6 rows */
+    width: 100%;
+    height: 100%;
+    max-width: 1300px; /* Increased width to accommodate larger gap (was 1200px) */
+    max-height: 500px;  /* Increased height to accommodate padding and stagger */
+    aspect-ratio: 3.25/1; /* Adjusted aspect ratio for wider layout */
+    padding-top: 100px; /* Increased padding to ensure staggered keys are fully visible */
+    box-sizing: border-box;
 }
 
-/* Tenkeyless key styling - match Corne behavior exactly */
-.keyboard-tenkeyless .key {
+/* Corne key styling - consistent with tenkeyless */
+.keyboard-corne .key {
     position: absolute;
-    width: 50px;
-    height: 50px;
-    border: 2px solid #333;
+    width: 4rem;
+    height: 4rem;
+    border: 2px solid rgba(255, 255, 255, 0.8);
     border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     font-weight: 600;
     transition: all 0.2s ease;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     user-select: none;
-    /* Ensure draggable behavior matches Corne */
+    z-index: 1;
+}
+
+.keyboard-corne .key:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+    border-color: #667eea;
+}
+
+.keyboard-corne .key:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+/* Key content styling for Corne */
+.keyboard-corne .key-image {
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: 4px;
+    pointer-events: none;
+}
+
+.keyboard-corne .key-label {
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-align: center;
+    line-height: 1.2;
+    color: #333;
+    text-shadow: 0 1px 2px rgba(255, 255, 255, 0.8);
+}
+
+.keyboard-corne .key-placeholder {
+    font-size: 1.2rem;
+    color: #999;
+    opacity: 0;
+}
+
+/* Overlay images for Corne - match tenkeyless exactly */
+.keyboard-corne .key-secondary-image,
+.keyboard-corne .key-tertiary-image {
+    position: absolute;
+    width: 12px;
+    height: 12px;
+    object-fit: contain;
+    border-radius: 2px;
+    border: none;
+    background: transparent;
+    z-index: 10;
+    pointer-events: none;
+    filter: drop-shadow(0 0 1px rgba(0, 0, 0, 0.3));
+}
+
+.keyboard-corne .key-secondary-image {
+    top: 2px;
+    right: 2px;
+}
+
+.keyboard-corne .key-tertiary-image {
+    bottom: 2px;
+    right: 2px;
+}
+.keyboard-tenkeyless {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: flex-start; /* Changed from center to flex-start */
+    overflow: visible;
+}
+
+.tenkeyless-grid {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    max-width: 2000px; /* Scaled up for 80px spacing (1500px * 80/60) */
+    max-height: 667px; /* Scaled up for 80px spacing (500px * 80/60) */
+    aspect-ratio: 3/1;
+}
+
+/* Tenkeyless key styling - consistent with Corne 4rem keys */
+.keyboard-tenkeyless .key {
+    position: absolute;
+    width: 4rem; /* Match main key size */
+    height: 4rem; /* Match main key size */
+    border: 2px solid rgba(255, 255, 255, 0.8);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 0.9rem; /* Match main key font size */
+    font-weight: 600;
+    transition: all 0.2s ease;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    user-select: none;
     z-index: 1;
 }
 
@@ -1215,16 +2506,6 @@ input[type="file"]:hover {
 .keyboard-tenkeyless .key:active {
     transform: translateY(0);
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-}
-
-/* When dragging, make sure it shows properly - match Corne exactly */
-.keyboard-tenkeyless .key.dragging {
-    cursor: grabbing !important;
-    z-index: 1000;
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-    border-color: #667eea;
-    transition: none;
-    transform: scale(1.05);
 }
 
 /* Key content styling for tenkeyless */
@@ -1248,6 +2529,7 @@ input[type="file"]:hover {
 .keyboard-tenkeyless .key-placeholder {
     font-size: 1.2rem;
     color: #999;
+    opacity: 0;
 }
 
 /* Overlay images for tenkeyless - match Corne exactly */

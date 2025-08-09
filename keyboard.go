@@ -65,104 +65,104 @@ func DefaultTenkeylessLayout() KeyboardLayout {
 	// Single base layer for tenkeyless with only one layer - all keys in one array
 	baseKeys := []Key{
 		// Function row (F1-F12) - Row 0
-		{ID: "ESC", Label: "Esc", Row: 0, Col: 0, Side: "left", KeyType: "function", Color: "#fff9c4"},
-		{ID: "F1", Label: "F1", Row: 0, Col: 2, Side: "left", KeyType: "function", Color: "#fff9c4"},
-		{ID: "F2", Label: "F2", Row: 0, Col: 3, Side: "left", KeyType: "function", Color: "#fff9c4"},
-		{ID: "F3", Label: "F3", Row: 0, Col: 4, Side: "left", KeyType: "function", Color: "#fff9c4"},
-		{ID: "F4", Label: "F4", Row: 0, Col: 5, Side: "left", KeyType: "function", Color: "#fff9c4"},
-		{ID: "F5", Label: "F5", Row: 0, Col: 7, Side: "left", KeyType: "function", Color: "#fff9c4"},
-		{ID: "F6", Label: "F6", Row: 0, Col: 8, Side: "left", KeyType: "function", Color: "#fff9c4"},
-		{ID: "F7", Label: "F7", Row: 0, Col: 9, Side: "left", KeyType: "function", Color: "#fff9c4"},
-		{ID: "F8", Label: "F8", Row: 0, Col: 10, Side: "left", KeyType: "function", Color: "#fff9c4"},
-		{ID: "F9", Label: "F9", Row: 0, Col: 12, Side: "left", KeyType: "function", Color: "#fff9c4"},
-		{ID: "F10", Label: "F10", Row: 0, Col: 13, Side: "left", KeyType: "function", Color: "#fff9c4"},
-		{ID: "F11", Label: "F11", Row: 0, Col: 14, Side: "left", KeyType: "function", Color: "#fff9c4"},
-		{ID: "F12", Label: "F12", Row: 0, Col: 15, Side: "left", KeyType: "function", Color: "#fff9c4"},
+		{ID: "ESC", Label: "", Row: 0, Col: 0, Side: "left", KeyType: "function", Color: "#e0e0e0"},
+		{ID: "F1", Label: "", Row: 0, Col: 2, Side: "left", KeyType: "function", Color: "#e0e0e0"},
+		{ID: "F2", Label: "", Row: 0, Col: 3, Side: "left", KeyType: "function", Color: "#e0e0e0"},
+		{ID: "F3", Label: "", Row: 0, Col: 4, Side: "left", KeyType: "function", Color: "#e0e0e0"},
+		{ID: "F4", Label: "", Row: 0, Col: 5, Side: "left", KeyType: "function", Color: "#e0e0e0"},
+		{ID: "F5", Label: "", Row: 0, Col: 7, Side: "left", KeyType: "function", Color: "#e0e0e0"},
+		{ID: "F6", Label: "", Row: 0, Col: 8, Side: "left", KeyType: "function", Color: "#e0e0e0"},
+		{ID: "F7", Label: "", Row: 0, Col: 9, Side: "left", KeyType: "function", Color: "#e0e0e0"},
+		{ID: "F8", Label: "", Row: 0, Col: 10, Side: "left", KeyType: "function", Color: "#e0e0e0"},
+		{ID: "F9", Label: "", Row: 0, Col: 12, Side: "left", KeyType: "function", Color: "#e0e0e0"},
+		{ID: "F10", Label: "", Row: 0, Col: 13, Side: "left", KeyType: "function", Color: "#e0e0e0"},
+		{ID: "F11", Label: "", Row: 0, Col: 14, Side: "left", KeyType: "function", Color: "#e0e0e0"},
+		{ID: "F12", Label: "", Row: 0, Col: 15, Side: "left", KeyType: "function", Color: "#e0e0e0"},
 
 		// Number row - Row 1
-		{ID: "GRAVE", Label: "`", Row: 1, Col: 0, Side: "left", KeyType: "normal", Color: "#f3e5f5"},
-		{ID: "KEY_1", Label: "1", Row: 1, Col: 1, Side: "left", KeyType: "normal", Color: "#e8f5e8"},
-		{ID: "KEY_2", Label: "2", Row: 1, Col: 2, Side: "left", KeyType: "normal", Color: "#e8f5e8"},
-		{ID: "KEY_3", Label: "3", Row: 1, Col: 3, Side: "left", KeyType: "normal", Color: "#e8f5e8"},
-		{ID: "KEY_4", Label: "4", Row: 1, Col: 4, Side: "left", KeyType: "normal", Color: "#e8f5e8"},
-		{ID: "KEY_5", Label: "5", Row: 1, Col: 5, Side: "left", KeyType: "normal", Color: "#e8f5e8"},
-		{ID: "KEY_6", Label: "6", Row: 1, Col: 6, Side: "left", KeyType: "normal", Color: "#e8f5e8"},
-		{ID: "KEY_7", Label: "7", Row: 1, Col: 7, Side: "left", KeyType: "normal", Color: "#e8f5e8"},
-		{ID: "KEY_8", Label: "8", Row: 1, Col: 8, Side: "left", KeyType: "normal", Color: "#e8f5e8"},
-		{ID: "KEY_9", Label: "9", Row: 1, Col: 9, Side: "left", KeyType: "normal", Color: "#e8f5e8"},
-		{ID: "KEY_0", Label: "0", Row: 1, Col: 10, Side: "left", KeyType: "normal", Color: "#e8f5e8"},
-		{ID: "MINUS", Label: "-", Row: 1, Col: 11, Side: "left", KeyType: "normal", Color: "#f3e5f5"},
-		{ID: "EQUAL", Label: "=", Row: 1, Col: 12, Side: "left", KeyType: "normal", Color: "#f3e5f5"},
-		{ID: "BACKSPACE", Label: "Backspace", Row: 1, Col: 13, Side: "left", KeyType: "modifier", Color: "#ffebee"},
+		{ID: "GRAVE", Label: "", Row: 1, Col: 0, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "KEY_1", Label: "", Row: 1, Col: 1, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "KEY_2", Label: "", Row: 1, Col: 2, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "KEY_3", Label: "", Row: 1, Col: 3, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "KEY_4", Label: "", Row: 1, Col: 4, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "KEY_5", Label: "", Row: 1, Col: 5, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "KEY_6", Label: "", Row: 1, Col: 6, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "KEY_7", Label: "", Row: 1, Col: 7, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "KEY_8", Label: "", Row: 1, Col: 8, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "KEY_9", Label: "", Row: 1, Col: 9, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "KEY_0", Label: "", Row: 1, Col: 10, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "MINUS", Label: "", Row: 1, Col: 11, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "EQUAL", Label: "", Row: 1, Col: 12, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "BACKSPACE", Label: "", Row: 1, Col: 13, Side: "left", KeyType: "modifier", Color: "#e0e0e0"},
 
 		// Top letter row (QWERTY) - Row 2
-		{ID: "TAB", Label: "Tab", Row: 2, Col: 0, Side: "left", KeyType: "modifier", Color: "#ffebee"},
-		{ID: "KEY_Q", Label: "Q", Row: 2, Col: 1, Side: "left", KeyType: "normal", Color: "#e3f2fd"},
-		{ID: "KEY_W", Label: "W", Row: 2, Col: 2, Side: "left", KeyType: "normal", Color: "#e3f2fd"},
-		{ID: "KEY_E", Label: "E", Row: 2, Col: 3, Side: "left", KeyType: "normal", Color: "#e3f2fd"},
-		{ID: "KEY_R", Label: "R", Row: 2, Col: 4, Side: "left", KeyType: "normal", Color: "#e3f2fd"},
-		{ID: "KEY_T", Label: "T", Row: 2, Col: 5, Side: "left", KeyType: "normal", Color: "#e3f2fd"},
-		{ID: "KEY_Y", Label: "Y", Row: 2, Col: 6, Side: "left", KeyType: "normal", Color: "#e3f2fd"},
-		{ID: "KEY_U", Label: "U", Row: 2, Col: 7, Side: "left", KeyType: "normal", Color: "#e3f2fd"},
-		{ID: "KEY_I", Label: "I", Row: 2, Col: 8, Side: "left", KeyType: "normal", Color: "#e3f2fd"},
-		{ID: "KEY_O", Label: "O", Row: 2, Col: 9, Side: "left", KeyType: "normal", Color: "#e3f2fd"},
-		{ID: "KEY_P", Label: "P", Row: 2, Col: 10, Side: "left", KeyType: "normal", Color: "#e3f2fd"},
-		{ID: "LBRACKET", Label: "[", Row: 2, Col: 11, Side: "left", KeyType: "normal", Color: "#f3e5f5"},
-		{ID: "RBRACKET", Label: "]", Row: 2, Col: 12, Side: "left", KeyType: "normal", Color: "#f3e5f5"},
-		{ID: "BACKSLASH", Label: "\\", Row: 2, Col: 13, Side: "left", KeyType: "normal", Color: "#f3e5f5"},
+		{ID: "TAB", Label: "", Row: 2, Col: 0, Side: "left", KeyType: "modifier", Color: "#e0e0e0"},
+		{ID: "KEY_Q", Label: "", Row: 2, Col: 1, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "KEY_W", Label: "", Row: 2, Col: 2, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "KEY_E", Label: "", Row: 2, Col: 3, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "KEY_R", Label: "", Row: 2, Col: 4, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "KEY_T", Label: "", Row: 2, Col: 5, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "KEY_Y", Label: "", Row: 2, Col: 6, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "KEY_U", Label: "", Row: 2, Col: 7, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "KEY_I", Label: "", Row: 2, Col: 8, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "KEY_O", Label: "", Row: 2, Col: 9, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "KEY_P", Label: "", Row: 2, Col: 10, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "LBRACKET", Label: "", Row: 2, Col: 11, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "RBRACKET", Label: "", Row: 2, Col: 12, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "BACKSLASH", Label: "", Row: 2, Col: 13, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
 
 		// Home row (ASDF) - Row 3
-		{ID: "CAPS", Label: "Caps Lock", Row: 3, Col: 0, Side: "left", KeyType: "modifier", Color: "#ffebee"},
-		{ID: "KEY_A", Label: "A", Row: 3, Col: 1, Side: "left", KeyType: "normal", Color: "#fff3e0"},
-		{ID: "KEY_S", Label: "S", Row: 3, Col: 2, Side: "left", KeyType: "normal", Color: "#fff3e0"},
-		{ID: "KEY_D", Label: "D", Row: 3, Col: 3, Side: "left", KeyType: "normal", Color: "#fff3e0"},
-		{ID: "KEY_F", Label: "F", Row: 3, Col: 4, Side: "left", KeyType: "normal", Color: "#fff3e0"},
-		{ID: "KEY_G", Label: "G", Row: 3, Col: 5, Side: "left", KeyType: "normal", Color: "#fff3e0"},
-		{ID: "KEY_H", Label: "H", Row: 3, Col: 6, Side: "left", KeyType: "normal", Color: "#fff3e0"},
-		{ID: "KEY_J", Label: "J", Row: 3, Col: 7, Side: "left", KeyType: "normal", Color: "#fff3e0"},
-		{ID: "KEY_K", Label: "K", Row: 3, Col: 8, Side: "left", KeyType: "normal", Color: "#fff3e0"},
-		{ID: "KEY_L", Label: "L", Row: 3, Col: 9, Side: "left", KeyType: "normal", Color: "#fff3e0"},
-		{ID: "SEMICOLON", Label: ";", Row: 3, Col: 10, Side: "left", KeyType: "normal", Color: "#f3e5f5"},
-		{ID: "QUOTE", Label: "'", Row: 3, Col: 11, Side: "left", KeyType: "normal", Color: "#f3e5f5"},
-		{ID: "ENTER", Label: "Enter", Row: 3, Col: 12, Side: "left", KeyType: "modifier", Color: "#ffebee"},
+		{ID: "CAPS", Label: "", Row: 3, Col: 0, Side: "left", KeyType: "modifier", Color: "#e0e0e0"},
+		{ID: "KEY_A", Label: "", Row: 3, Col: 1, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "KEY_S", Label: "", Row: 3, Col: 2, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "KEY_D", Label: "", Row: 3, Col: 3, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "KEY_F", Label: "", Row: 3, Col: 4, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "KEY_G", Label: "", Row: 3, Col: 5, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "KEY_H", Label: "", Row: 3, Col: 6, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "KEY_J", Label: "", Row: 3, Col: 7, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "KEY_K", Label: "", Row: 3, Col: 8, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "KEY_L", Label: "", Row: 3, Col: 9, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "SEMICOLON", Label: "", Row: 3, Col: 10, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "QUOTE", Label: "", Row: 3, Col: 11, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "ENTER", Label: "", Row: 3, Col: 12, Side: "left", KeyType: "modifier", Color: "#e0e0e0"},
 
 		// Bottom row (ZXCV) - Row 4
-		{ID: "LSHIFT", Label: "Shift", Row: 4, Col: 0, Side: "left", KeyType: "modifier", Color: "#ffebee"},
-		{ID: "KEY_Z", Label: "Z", Row: 4, Col: 1, Side: "left", KeyType: "normal", Color: "#f3e5f5"},
-		{ID: "KEY_X", Label: "X", Row: 4, Col: 2, Side: "left", KeyType: "normal", Color: "#f3e5f5"},
-		{ID: "KEY_C", Label: "C", Row: 4, Col: 3, Side: "left", KeyType: "normal", Color: "#f3e5f5"},
-		{ID: "KEY_V", Label: "V", Row: 4, Col: 4, Side: "left", KeyType: "normal", Color: "#f3e5f5"},
-		{ID: "KEY_B", Label: "B", Row: 4, Col: 5, Side: "left", KeyType: "normal", Color: "#f3e5f5"},
-		{ID: "KEY_N", Label: "N", Row: 4, Col: 6, Side: "left", KeyType: "normal", Color: "#f3e5f5"},
-		{ID: "KEY_M", Label: "M", Row: 4, Col: 7, Side: "left", KeyType: "normal", Color: "#f3e5f5"},
-		{ID: "COMMA", Label: ",", Row: 4, Col: 8, Side: "left", KeyType: "normal", Color: "#f3e5f5"},
-		{ID: "PERIOD", Label: ".", Row: 4, Col: 9, Side: "left", KeyType: "normal", Color: "#f3e5f5"},
-		{ID: "SLASH", Label: "/", Row: 4, Col: 10, Side: "left", KeyType: "normal", Color: "#f3e5f5"},
-		{ID: "RSHIFT", Label: "Shift", Row: 4, Col: 11, Side: "left", KeyType: "modifier", Color: "#ffebee"},
+		{ID: "LSHIFT", Label: "", Row: 4, Col: 0, Side: "left", KeyType: "modifier", Color: "#e0e0e0"},
+		{ID: "KEY_Z", Label: "", Row: 4, Col: 1, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "KEY_X", Label: "", Row: 4, Col: 2, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "KEY_C", Label: "", Row: 4, Col: 3, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "KEY_V", Label: "", Row: 4, Col: 4, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "KEY_B", Label: "", Row: 4, Col: 5, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "KEY_N", Label: "", Row: 4, Col: 6, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "KEY_M", Label: "", Row: 4, Col: 7, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "COMMA", Label: "", Row: 4, Col: 8, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "PERIOD", Label: "", Row: 4, Col: 9, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "SLASH", Label: "", Row: 4, Col: 10, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "RSHIFT", Label: "", Row: 4, Col: 11, Side: "left", KeyType: "modifier", Color: "#e0e0e0"},
 
 		// Bottom modifier row - Row 5
-		{ID: "LCTRL", Label: "Ctrl", Row: 5, Col: 0, Side: "left", KeyType: "modifier", Color: "#ffebee"},
-		{ID: "LGUI", Label: "Win", Row: 5, Col: 1, Side: "left", KeyType: "modifier", Color: "#ffebee"},
-		{ID: "LALT", Label: "Alt", Row: 5, Col: 2, Side: "left", KeyType: "modifier", Color: "#ffebee"},
-		{ID: "SPACE", Label: "Space", Row: 5, Col: 3, Side: "left", KeyType: "spacebar", Color: "#e0f2f1"},
-		{ID: "RALT", Label: "Alt", Row: 5, Col: 4, Side: "left", KeyType: "modifier", Color: "#ffebee"},
-		{ID: "RGUI", Label: "Win", Row: 5, Col: 5, Side: "left", KeyType: "modifier", Color: "#ffebee"},
-		{ID: "MENU", Label: "Menu", Row: 5, Col: 6, Side: "left", KeyType: "modifier", Color: "#ffebee"},
-		{ID: "RCTRL", Label: "Ctrl", Row: 5, Col: 7, Side: "left", KeyType: "modifier", Color: "#ffebee"},
+		{ID: "LCTRL", Label: "", Row: 5, Col: 0, Side: "left", KeyType: "modifier", Color: "#e0e0e0"},
+		{ID: "LGUI", Label: "", Row: 5, Col: 1, Side: "left", KeyType: "modifier", Color: "#e0e0e0"},
+		{ID: "LALT", Label: "", Row: 5, Col: 2, Side: "left", KeyType: "modifier", Color: "#e0e0e0"},
+		{ID: "SPACE", Label: "", Row: 5, Col: 3, Side: "left", KeyType: "spacebar", Color: "#e0e0e0"},
+		{ID: "RALT", Label: "", Row: 5, Col: 4, Side: "left", KeyType: "modifier", Color: "#e0e0e0"},
+		{ID: "RGUI", Label: "", Row: 5, Col: 5, Side: "left", KeyType: "modifier", Color: "#e0e0e0"},
+		{ID: "MENU", Label: "", Row: 5, Col: 6, Side: "left", KeyType: "modifier", Color: "#e0e0e0"},
+		{ID: "RCTRL", Label: "", Row: 5, Col: 7, Side: "left", KeyType: "modifier", Color: "#e0e0e0"},
 
 		// Navigation cluster - positioned separately
-		{ID: "INSERT", Label: "Ins", Row: 1, Col: 15, Side: "right", KeyType: "nav", Color: "#e1f5fe"},
-		{ID: "HOME", Label: "Home", Row: 1, Col: 16, Side: "right", KeyType: "nav", Color: "#e1f5fe"},
-		{ID: "PAGEUP", Label: "PgUp", Row: 1, Col: 17, Side: "right", KeyType: "nav", Color: "#e1f5fe"},
-		{ID: "DELETE", Label: "Del", Row: 2, Col: 15, Side: "right", KeyType: "nav", Color: "#e1f5fe"},
-		{ID: "END", Label: "End", Row: 2, Col: 16, Side: "right", KeyType: "nav", Color: "#e1f5fe"},
-		{ID: "PAGEDOWN", Label: "PgDn", Row: 2, Col: 17, Side: "right", KeyType: "nav", Color: "#e1f5fe"},
+		{ID: "INSERT", Label: "", Row: 1, Col: 15, Side: "right", KeyType: "nav", Color: "#e0e0e0"},
+		{ID: "HOME", Label: "", Row: 1, Col: 16, Side: "right", KeyType: "nav", Color: "#e0e0e0"},
+		{ID: "PAGEUP", Label: "", Row: 1, Col: 17, Side: "right", KeyType: "nav", Color: "#e0e0e0"},
+		{ID: "DELETE", Label: "", Row: 2, Col: 15, Side: "right", KeyType: "nav", Color: "#e0e0e0"},
+		{ID: "END", Label: "", Row: 2, Col: 16, Side: "right", KeyType: "nav", Color: "#e0e0e0"},
+		{ID: "PAGEDOWN", Label: "", Row: 2, Col: 17, Side: "right", KeyType: "nav", Color: "#e0e0e0"},
 
 		// Arrow keys
-		{ID: "UP", Label: "↑", Row: 4, Col: 16, Side: "right", KeyType: "arrow", Color: "#e8eaf6"},
-		{ID: "LEFT", Label: "←", Row: 5, Col: 15, Side: "right", KeyType: "arrow", Color: "#e8eaf6"},
-		{ID: "DOWN", Label: "↓", Row: 5, Col: 16, Side: "right", KeyType: "arrow", Color: "#e8eaf6"},
-		{ID: "RIGHT", Label: "→", Row: 5, Col: 17, Side: "right", KeyType: "arrow", Color: "#e8eaf6"},
+		{ID: "UP", Label: "", Row: 4, Col: 16, Side: "right", KeyType: "arrow", Color: "#e0e0e0"},
+		{ID: "LEFT", Label: "", Row: 5, Col: 15, Side: "right", KeyType: "arrow", Color: "#e0e0e0"},
+		{ID: "DOWN", Label: "", Row: 5, Col: 16, Side: "right", KeyType: "arrow", Color: "#e0e0e0"},
+		{ID: "RIGHT", Label: "", Row: 5, Col: 17, Side: "right", KeyType: "arrow", Color: "#e0e0e0"},
 	}
 
 	// Set layer names for all keys
@@ -197,115 +197,95 @@ func DefaultCorneLayout() KeyboardLayout {
 	// Base layer keys - Corne 42-key layout (3 rows + 3 thumb keys per side)
 	baseKeys := []Key{
 		// Left side - column 0 (leftmost)
-		{ID: "L00", Label: "Q", Row: 0, Col: 0, Side: "left", KeyType: "normal", Color: "#e3f2fd"},
-		{ID: "L10", Label: "A", Row: 1, Col: 0, Side: "left", KeyType: "normal", Color: "#fff3e0"},
-		{ID: "L20", Label: "Z", Row: 2, Col: 0, Side: "left", KeyType: "normal", Color: "#f3e5f5"},
+		{ID: "L00", Label: "", Row: 0, Col: 0, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "L10", Label: "", Row: 1, Col: 0, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "L20", Label: "", Row: 2, Col: 0, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
 
 		// Left side - column 1
-		{ID: "L01", Label: "W", Row: 0, Col: 1, Side: "left", KeyType: "normal", Color: "#e3f2fd"},
-		{ID: "L11", Label: "S", Row: 1, Col: 1, Side: "left", KeyType: "normal", Color: "#fff3e0"},
-		{ID: "L21", Label: "X", Row: 2, Col: 1, Side: "left", KeyType: "normal", Color: "#f3e5f5"},
+		{ID: "L01", Label: "", Row: 0, Col: 1, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "L11", Label: "", Row: 1, Col: 1, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "L21", Label: "", Row: 2, Col: 1, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
 
 		// Left side - column 2
-		{ID: "L02", Label: "E", Row: 0, Col: 2, Side: "left", KeyType: "normal", Color: "#e3f2fd"},
-		{ID: "L12", Label: "D", Row: 1, Col: 2, Side: "left", KeyType: "normal", Color: "#fff3e0"},
-		{ID: "L22", Label: "C", Row: 2, Col: 2, Side: "left", KeyType: "normal", Color: "#f3e5f5"},
+		{ID: "L02", Label: "", Row: 0, Col: 2, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "L12", Label: "", Row: 1, Col: 2, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "L22", Label: "", Row: 2, Col: 2, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
 
 		// Left side - column 3
-		{ID: "L03", Label: "R", Row: 0, Col: 3, Side: "left", KeyType: "normal", Color: "#e3f2fd"},
-		{ID: "L13", Label: "F", Row: 1, Col: 3, Side: "left", KeyType: "normal", Color: "#fff3e0"},
-		{ID: "L23", Label: "V", Row: 2, Col: 3, Side: "left", KeyType: "normal", Color: "#f3e5f5"},
+		{ID: "L03", Label: "", Row: 0, Col: 3, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "L13", Label: "", Row: 1, Col: 3, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "L23", Label: "", Row: 2, Col: 3, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
 
 		// Left side - column 4
-		{ID: "L04", Label: "T", Row: 0, Col: 4, Side: "left", KeyType: "normal", Color: "#e3f2fd"},
-		{ID: "L14", Label: "G", Row: 1, Col: 4, Side: "left", KeyType: "normal", Color: "#fff3e0"},
-		{ID: "L24", Label: "B", Row: 2, Col: 4, Side: "left", KeyType: "normal", Color: "#f3e5f5"},
+		{ID: "L04", Label: "", Row: 0, Col: 4, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "L14", Label: "", Row: 1, Col: 4, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "L24", Label: "", Row: 2, Col: 4, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
 
 		// Left side - column 5 (rightmost on left half)
-		{ID: "L05", Label: "Y", Row: 0, Col: 5, Side: "left", KeyType: "normal", Color: "#e3f2fd"},
-		{ID: "L15", Label: "H", Row: 1, Col: 5, Side: "left", KeyType: "normal", Color: "#fff3e0"},
-		{ID: "L25", Label: "N", Row: 2, Col: 5, Side: "left", KeyType: "normal", Color: "#f3e5f5"},
+		{ID: "L05", Label: "", Row: 0, Col: 5, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "L15", Label: "", Row: 1, Col: 5, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "L25", Label: "", Row: 2, Col: 5, Side: "left", KeyType: "normal", Color: "#e0e0e0"},
 
 		// Left side - thumb keys
-		{ID: "L30", Label: "GUI", Row: 3, Col: 0, Side: "left", KeyType: "thumb", Color: "#ffebee"},
-		{ID: "L31", Label: "LWR", Row: 3, Col: 1, Side: "left", KeyType: "thumb-1_5u", Color: "#ffebee"},
-		{ID: "L32", Label: "SPC", Row: 3, Col: 2, Side: "left", KeyType: "thumb", Color: "#ffebee"},
+		{ID: "L30", Label: "", Row: 3, Col: 0, Side: "left", KeyType: "thumb", Color: "#e0e0e0"},
+		{ID: "L31", Label: "", Row: 3, Col: 1, Side: "left", KeyType: "thumb-1_5u", Color: "#e0e0e0"},
+		{ID: "L32", Label: "", Row: 3, Col: 2, Side: "left", KeyType: "thumb", Color: "#e0e0e0"},
 
 		// Right side - column 0 (leftmost on right half)
-		{ID: "R00", Label: "U", Row: 0, Col: 0, Side: "right", KeyType: "normal", Color: "#e3f2fd"},
-		{ID: "R10", Label: "J", Row: 1, Col: 0, Side: "right", KeyType: "normal", Color: "#fff3e0"},
-		{ID: "R20", Label: "M", Row: 2, Col: 0, Side: "right", KeyType: "normal", Color: "#f3e5f5"},
+		{ID: "R00", Label: "", Row: 0, Col: 0, Side: "right", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "R10", Label: "", Row: 1, Col: 0, Side: "right", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "R20", Label: "", Row: 2, Col: 0, Side: "right", KeyType: "normal", Color: "#e0e0e0"},
 
 		// Right side - column 1
-		{ID: "R01", Label: "I", Row: 0, Col: 1, Side: "right", KeyType: "normal", Color: "#e3f2fd"},
-		{ID: "R11", Label: "K", Row: 1, Col: 1, Side: "right", KeyType: "normal", Color: "#fff3e0"},
-		{ID: "R21", Label: ",", Row: 2, Col: 1, Side: "right", KeyType: "normal", Color: "#f3e5f5"},
+		{ID: "R01", Label: "", Row: 0, Col: 1, Side: "right", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "R11", Label: "", Row: 1, Col: 1, Side: "right", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "R21", Label: "", Row: 2, Col: 1, Side: "right", KeyType: "normal", Color: "#e0e0e0"},
 
 		// Right side - column 2
-		{ID: "R02", Label: "O", Row: 0, Col: 2, Side: "right", KeyType: "normal", Color: "#e3f2fd"},
-		{ID: "R12", Label: "L", Row: 1, Col: 2, Side: "right", KeyType: "normal", Color: "#fff3e0"},
-		{ID: "R22", Label: ".", Row: 2, Col: 2, Side: "right", KeyType: "normal", Color: "#f3e5f5"},
+		{ID: "R02", Label: "", Row: 0, Col: 2, Side: "right", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "R12", Label: "", Row: 1, Col: 2, Side: "right", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "R22", Label: "", Row: 2, Col: 2, Side: "right", KeyType: "normal", Color: "#e0e0e0"},
 
 		// Right side - column 3
-		{ID: "R03", Label: "P", Row: 0, Col: 3, Side: "right", KeyType: "normal", Color: "#e3f2fd"},
-		{ID: "R13", Label: ";", Row: 1, Col: 3, Side: "right", KeyType: "normal", Color: "#fff3e0"},
-		{ID: "R23", Label: "/", Row: 2, Col: 3, Side: "right", KeyType: "normal", Color: "#f3e5f5"},
+		{ID: "R03", Label: "", Row: 0, Col: 3, Side: "right", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "R13", Label: "", Row: 1, Col: 3, Side: "right", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "R23", Label: "", Row: 2, Col: 3, Side: "right", KeyType: "normal", Color: "#e0e0e0"},
 
 		// Right side - column 4
-		{ID: "R04", Label: "[", Row: 0, Col: 4, Side: "right", KeyType: "normal", Color: "#e3f2fd"},
-		{ID: "R14", Label: "'", Row: 1, Col: 4, Side: "right", KeyType: "normal", Color: "#fff3e0"},
-		{ID: "R24", Label: "↑", Row: 2, Col: 4, Side: "right", KeyType: "normal", Color: "#f3e5f5"},
+		{ID: "R04", Label: "", Row: 0, Col: 4, Side: "right", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "R14", Label: "", Row: 1, Col: 4, Side: "right", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "R24", Label: "", Row: 2, Col: 4, Side: "right", KeyType: "normal", Color: "#e0e0e0"},
 
 		// Right side - column 5 (rightmost)
-		{ID: "R05", Label: "]", Row: 0, Col: 5, Side: "right", KeyType: "normal", Color: "#e3f2fd"},
-		{ID: "R15", Label: "\\", Row: 1, Col: 5, Side: "right", KeyType: "normal", Color: "#fff3e0"},
-		{ID: "R25", Label: "⇧", Row: 2, Col: 5, Side: "right", KeyType: "normal", Color: "#f3e5f5"},
+		{ID: "R05", Label: "", Row: 0, Col: 5, Side: "right", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "R15", Label: "", Row: 1, Col: 5, Side: "right", KeyType: "normal", Color: "#e0e0e0"},
+		{ID: "R25", Label: "", Row: 2, Col: 5, Side: "right", KeyType: "normal", Color: "#e0e0e0"},
 
 		// Right side - thumb keys
-		{ID: "R30", Label: "⏎", Row: 3, Col: 0, Side: "right", KeyType: "thumb", Color: "#ffebee"},
-		{ID: "R31", Label: "RSE", Row: 3, Col: 1, Side: "right", KeyType: "thumb-1_5u", Color: "#ffebee"},
-		{ID: "R32", Label: "ALT", Row: 3, Col: 2, Side: "right", KeyType: "thumb", Color: "#ffebee"},
+		{ID: "R30", Label: "", Row: 3, Col: 0, Side: "right", KeyType: "thumb", Color: "#e0e0e0"},
+		{ID: "R31", Label: "", Row: 3, Col: 1, Side: "right", KeyType: "thumb-1_5u", Color: "#e0e0e0"},
+		{ID: "R32", Label: "", Row: 3, Col: 2, Side: "right", KeyType: "thumb", Color: "#e0e0e0"},
 	}
 
-	// Lower layer keys (numbers and symbols)
+	// Lower layer keys - start blank like base layer
 	lowerKeys := make([]Key, len(baseKeys))
 	copy(lowerKeys, baseKeys)
 	
-	// Override specific keys for lower layer
-	lowerOverrides := map[string]string{
-		"L00": "1", "L01": "2", "L02": "3", "L03": "4", "L04": "5", "L05": "6",
-		"R00": "7", "R01": "8", "R02": "9", "R03": "0", "R04": "-", "R05": "=",
-		"L10": "!", "L11": "@", "L12": "#", "L13": "$", "L14": "%", "L15": "^",
-		"R10": "&", "R11": "*", "R12": "(", "R13": ")", "R14": "_", "R15": "+",
-		"R24": "↑", "R21": "←", "R22": "↓", "R23": "→",
-	}
-
-	for i, key := range lowerKeys {
-		if newLabel, exists := lowerOverrides[key.ID]; exists {
-			lowerKeys[i].Label = newLabel
-			lowerKeys[i].Color = "#e8f5e8"
-		}
+	// No default overrides - keep keys blank for user customization
+	// Users can add their own labels and images through the UI
+	
+	for i := range lowerKeys {
 		lowerKeys[i].Layer = "lower"
 	}
 
-	// Raise layer keys (function keys and navigation)
+	// Raise layer keys - start blank like base layer  
 	raiseKeys := make([]Key, len(baseKeys))
 	copy(raiseKeys, baseKeys)
 	
-	// Override specific keys for raise layer
-	raiseOverrides := map[string]string{
-		"L00": "F1", "L01": "F2", "L02": "F3", "L03": "F4", "L04": "F5", "L05": "F6",
-		"R00": "F7", "R01": "F8", "R02": "F9", "R03": "F10", "R04": "F11", "R05": "F12",
-		"L10": "Tab", "L11": "Caps", "L12": "Esc", "L13": "Del", "L14": "Ins", "L15": "Home",
-		"R10": "End", "R11": "PgUp", "R12": "PgDn", "R13": "PrSc", "R14": "Scrl", "R15": "Paus",
-		"R20": "Vol-", "R21": "Vol+", "R22": "Mute", "R23": "Play", "R24": "↑", "R25": "⇧",
-	}
-
-	for i, key := range raiseKeys {
-		if newLabel, exists := raiseOverrides[key.ID]; exists {
-			raiseKeys[i].Label = newLabel
-			raiseKeys[i].Color = "#fff9c4"
-		}
+	// No default overrides - keep keys blank for user customization
+	// Users can add their own labels and images through the UI
+	
+	for i := range raiseKeys {
 		raiseKeys[i].Layer = "raise"
 	}
 
@@ -357,12 +337,29 @@ func (kl *KeyboardLayout) generateAllModifierCombinations(layerName string, base
 		// Create the key combination string
 		comboKey := strings.Join(activeMods, "+")
 		
-		// Create keys for this combination
+		// Create keys for this combination - start with blank keys
 		comboKeys := make([]Key, len(baseKeys))
-		copy(comboKeys, baseKeys)
 		
-		// Apply styling and labels based on the combination
-		kl.applyModifierStyling(comboKeys, activeMods, layerName)
+		// Create blank keys based on base structure but without copying content
+		for j, baseKey := range baseKeys {
+			comboKeys[j] = Key{
+				ID:               baseKey.ID,
+				Label:            "", // Start with blank label
+				ImagePath:        "", // No image path
+				ImageData:        "", // No image data
+				Description:      "", // No description
+				Color:            "#e0e0e0", // Light grey for blank keys
+				Layer:            baseKey.Layer,
+				Modifiers:        activeMods, // Set the active modifiers
+				Row:              baseKey.Row,
+				Col:              baseKey.Col,
+				Side:             baseKey.Side,
+				KeyType:          baseKey.KeyType,
+				CustomX:          baseKey.CustomX,
+				CustomY:          baseKey.CustomY,
+				IsCustomPosition: baseKey.IsCustomPosition,
+			}
+		}
 		
 		// Store the combination
 		kl.ModifierMaps[layerName][comboKey] = comboKeys
@@ -371,109 +368,24 @@ func (kl *KeyboardLayout) generateAllModifierCombinations(layerName string, base
 
 // applyModifierStyling applies appropriate styling and labels based on active modifiers
 func (kl *KeyboardLayout) applyModifierStyling(keys []Key, activeMods []string, layerName string) {
-	modString := strings.Join(activeMods, "+")
+	// Don't apply any default styling - keep keys blank with light grey color
+	// Users can add their own content through the UI
 	
-	// Define colors for different combinations
-	colors := map[string]string{
-		"ctrl":           "#ffcdd2",
-		"shift":          "#c8e6c9", 
-		"alt":            "#fff9c4",
-		"gui":            "#b3e5fc",
-		"ctrl+shift":     "#e1bee7",
-		"ctrl+alt":       "#ffccbc",
-		"ctrl+gui":       "#f8bbd9",
-		"shift+alt":      "#e8f5e8",
-		"shift+gui":      "#e0f2f1",
-		"alt+gui":        "#fff3e0",
-	}
-	
-	// Default color for complex combinations
-	color := "#e1bee7"
-	if c, exists := colors[modString]; exists {
-		color = c
-	}
-	
-	// Apply styling to all keys
+	// Apply light grey color to all keys in modifier combinations
 	for i := range keys {
-		keys[i].Color = color
-		keys[i].Description = modString + " + " + keys[i].Label
+		// Only change color if the key doesn't have custom content
+		if keys[i].Label == "" && (keys[i].ImageData == "" || !strings.HasPrefix(keys[i].ImageData, "data:image/")) {
+			keys[i].Color = "#e0e0e0" // Light grey for blank keys
+		}
 		
-		// Apply specific label overrides based on layer and modifiers
-		kl.applySpecificOverrides(&keys[i], activeMods, layerName)
+		// Don't apply any default labels or descriptions
+		// Let users add their own content through the UI
 	}
 }
 
-// applySpecificOverrides applies specific label overrides for certain key combinations
+// applySpecificOverrides is no longer used - modifier keys stay blank by default
 func (kl *KeyboardLayout) applySpecificOverrides(key *Key, activeMods []string, layerName string) {
-	modString := strings.Join(activeMods, "+")
-	
-	// Base layer overrides
-	if layerName == "base" {
-		switch modString {
-		case "ctrl":
-			ctrlOverrides := map[string]string{
-				"L00": "Ctrl+Q", "L01": "Ctrl+W", "L02": "Ctrl+E", "L03": "Ctrl+R", "L04": "Ctrl+T",
-				"L10": "Ctrl+A", "L11": "Ctrl+S", "L12": "Ctrl+D", "L13": "Ctrl+F", "L14": "Ctrl+G",
-				"L20": "Ctrl+Z", "L21": "Ctrl+X", "L22": "Ctrl+C", "L23": "Ctrl+V", "L24": "Ctrl+B",
-				"R00": "Ctrl+U", "R01": "Ctrl+I", "R02": "Ctrl+O", "R03": "Ctrl+P",
-				"R10": "Ctrl+J", "R11": "Ctrl+K", "R12": "Ctrl+L",
-				"R20": "Ctrl+M", "R21": "Ctrl+,", "R22": "Ctrl+.", "R23": "Ctrl+/",
-			}
-			if newLabel, exists := ctrlOverrides[key.ID]; exists {
-				key.Label = newLabel
-			}
-		case "shift":
-			shiftOverrides := map[string]string{
-				"L00": "Q", "L01": "W", "L02": "E", "L03": "R", "L04": "T", "L05": "Y",
-				"R00": "U", "R01": "I", "R02": "O", "R03": "P", "R04": "{", "R05": "}",
-				"L10": "A", "L11": "S", "L12": "D", "L13": "F", "L14": "G", "L15": "H",
-				"R10": "J", "R11": "K", "R12": "L", "R13": ":", "R14": "\"", "R15": "|",
-				"L20": "Z", "L21": "X", "L22": "C", "L23": "V", "L24": "B", "L25": "N",
-				"R20": "M", "R21": "<", "R22": ">", "R23": "?", "R24": "↑", "R25": "⇧",
-			}
-			if newLabel, exists := shiftOverrides[key.ID]; exists {
-				key.Label = newLabel
-			}
-		case "alt":
-			altOverrides := map[string]string{
-				"L10": "Alt+Tab", "L13": "Alt+F4",
-			}
-			if newLabel, exists := altOverrides[key.ID]; exists {
-				key.Label = newLabel
-			}
-		case "gui":
-			guiOverrides := map[string]string{
-				"L01": "Win+W", "L02": "Win+E", "L03": "Win+R", "L13": "Win+L",
-			}
-			if newLabel, exists := guiOverrides[key.ID]; exists {
-				key.Label = newLabel
-			}
-		}
-	} else if layerName == "lower" {
-		switch modString {
-		case "ctrl":
-			ctrlOverrides := map[string]string{
-				"L00": "Ctrl+1", "L01": "Ctrl+2", "L02": "Ctrl+3", "L03": "Ctrl+4", "L04": "Ctrl+5", "L05": "Ctrl+6",
-				"R00": "Ctrl+7", "R01": "Ctrl+8", "R02": "Ctrl+9", "R03": "Ctrl+0",
-				"L20": "Ctrl+Z", "L21": "Ctrl+X", "L22": "Ctrl+C", "L23": "Ctrl+V",
-			}
-			if newLabel, exists := ctrlOverrides[key.ID]; exists {
-				key.Label = newLabel
-			}
-		}
-	} else if layerName == "raise" {
-		switch modString {
-		case "ctrl":
-			ctrlOverrides := map[string]string{
-				"L00": "Ctrl+F1", "L01": "Ctrl+F2", "L02": "Ctrl+F3", "L03": "Ctrl+F4", "L04": "Ctrl+F5", "L05": "Ctrl+F6",
-				"R00": "Ctrl+F7", "R01": "Ctrl+F8", "R02": "Ctrl+F9", "R03": "Ctrl+F10", "R04": "Ctrl+F11", "R05": "Ctrl+F12",
-				"L10": "Ctrl+Tab", "L12": "Ctrl+Esc", "L13": "Ctrl+Del",
-			}
-			if newLabel, exists := ctrlOverrides[key.ID]; exists {
-				key.Label = newLabel
-			}
-		}
-	}
+	// No longer apply any default overrides - let users customize through UI
 }
 
 // GetKeyByID finds a key by its ID in the current layer
@@ -530,12 +442,29 @@ func (kl *KeyboardLayout) GetKeysForActiveModifiers(layer string, activeModifier
 	sortedMods := make([]string, len(activeModifiers))
 	copy(sortedMods, activeModifiers)
 	
-	// Sort the modifiers in a consistent order: ctrl, shift, alt, gui
+	// Sort the modifiers in a consistent order: ctrl, shift, alt, gui, then custom modifiers alphabetically
 	modOrder := map[string]int{"ctrl": 0, "shift": 1, "alt": 2, "gui": 3}
 	for i := 0; i < len(sortedMods); i++ {
 		for j := i + 1; j < len(sortedMods); j++ {
-			if modOrder[sortedMods[i]] > modOrder[sortedMods[j]] {
+			orderI, existsI := modOrder[sortedMods[i]]
+			orderJ, existsJ := modOrder[sortedMods[j]]
+			
+			// If both are built-in modifiers, sort by order
+			if existsI && existsJ {
+				if orderI > orderJ {
+					sortedMods[i], sortedMods[j] = sortedMods[j], sortedMods[i]
+				}
+			} else if existsI && !existsJ {
+				// Built-in comes before custom
+				continue
+			} else if !existsI && existsJ {
+				// Custom comes after built-in
 				sortedMods[i], sortedMods[j] = sortedMods[j], sortedMods[i]
+			} else {
+				// Both are custom, sort alphabetically
+				if sortedMods[i] > sortedMods[j] {
+					sortedMods[i], sortedMods[j] = sortedMods[j], sortedMods[i]
+				}
 			}
 		}
 	}
@@ -548,20 +477,38 @@ func (kl *KeyboardLayout) GetKeysForActiveModifiers(layer string, activeModifier
 		if keys, exists := layerMods[comboKey]; exists {
 			return keys
 		}
-	}
-
-	// If exact combination doesn't exist, return base layer with indication
-	if baseKeys, exists := kl.Layers[layer]; exists {
-		// Create a copy and mark as custom combination
-		resultKeys := make([]Key, len(baseKeys))
-		copy(resultKeys, baseKeys)
 		
-		for i := range resultKeys {
-			resultKeys[i].Color = "#f0f0f0" // Gray for undefined combinations
-			resultKeys[i].Description = comboKey + " (undefined)"
+		// If exact combination doesn't exist, create it with blank layout
+		if baseKeys, exists := kl.Layers[layer]; exists {
+			newComboKeys := make([]Key, len(baseKeys))
+			
+			// Create blank keys based on base structure but without copying content
+			for i, baseKey := range baseKeys {
+				newComboKeys[i] = Key{
+					ID:               baseKey.ID,
+					Label:            "", // Start with blank label
+					ImagePath:        "", // No image path
+					ImageData:        "", // No image data  
+					Description:      "", // No description
+					Color:            "#e0e0e0", // Light grey for blank keys
+					Layer:            baseKey.Layer,
+					Modifiers:        sortedMods, // Set the active modifiers
+					Row:              baseKey.Row,
+					Col:              baseKey.Col,
+					Side:             baseKey.Side,
+					KeyType:          baseKey.KeyType,
+					CustomX:          baseKey.CustomX,
+					CustomY:          baseKey.CustomY,
+					IsCustomPosition: baseKey.IsCustomPosition,
+				}
+			}
+			
+			// Store the new blank combination
+			layerMods[comboKey] = newComboKeys
+			kl.ModifiedAt = time.Now()
+			
+			return newComboKeys
 		}
-		
-		return resultKeys
 	}
 
 	return []Key{}
@@ -594,12 +541,29 @@ func (kl *KeyboardLayout) UpdateModifierKeyByActiveModifiers(layer string, activ
 	sortedMods := make([]string, len(activeModifiers))
 	copy(sortedMods, activeModifiers)
 	
-	// Sort the modifiers in a consistent order: ctrl, shift, alt, gui
+	// Sort the modifiers in a consistent order: ctrl, shift, alt, gui, then custom modifiers alphabetically
 	modOrder := map[string]int{"ctrl": 0, "shift": 1, "alt": 2, "gui": 3}
 	for i := 0; i < len(sortedMods); i++ {
 		for j := i + 1; j < len(sortedMods); j++ {
-			if modOrder[sortedMods[i]] > modOrder[sortedMods[j]] {
+			orderI, existsI := modOrder[sortedMods[i]]
+			orderJ, existsJ := modOrder[sortedMods[j]]
+			
+			// If both are built-in modifiers, sort by order
+			if existsI && existsJ {
+				if orderI > orderJ {
+					sortedMods[i], sortedMods[j] = sortedMods[j], sortedMods[i]
+				}
+			} else if existsI && !existsJ {
+				// Built-in comes before custom
+				continue
+			} else if !existsI && existsJ {
+				// Custom comes after built-in
 				sortedMods[i], sortedMods[j] = sortedMods[j], sortedMods[i]
+			} else {
+				// Both are custom, sort alphabetically
+				if sortedMods[i] > sortedMods[j] {
+					sortedMods[i], sortedMods[j] = sortedMods[j], sortedMods[i]
+				}
 			}
 		}
 	}
@@ -610,15 +574,32 @@ func (kl *KeyboardLayout) UpdateModifierKeyByActiveModifiers(layer string, activ
 	// Check if the modifier combination exists, if not create it
 	if layerMods, exists := kl.ModifierMaps[layer]; exists {
 		if _, exists := layerMods[comboKey]; !exists {
-			// Combination doesn't exist, create it based on base layer
+			// Combination doesn't exist, create it based on base layer structure but with blank content
 			if baseKeys, exists := kl.Layers[layer]; exists {
 				newComboKeys := make([]Key, len(baseKeys))
-				copy(newComboKeys, baseKeys)
 				
-				// Apply modifier styling
-				kl.applyModifierStyling(newComboKeys, sortedMods, layer)
+				// Create blank keys based on base structure but without copying content
+				for i, baseKey := range baseKeys {
+					newComboKeys[i] = Key{
+						ID:               baseKey.ID,
+						Label:            "", // Start with blank label
+						ImagePath:        "", // No image path
+						ImageData:        "", // No image data  
+						Description:      "", // No description
+						Color:            "#e0e0e0", // Light grey for blank keys
+						Layer:            baseKey.Layer,
+						Modifiers:        sortedMods, // Set the active modifiers
+						Row:              baseKey.Row,
+						Col:              baseKey.Col,
+						Side:             baseKey.Side,
+						KeyType:          baseKey.KeyType,
+						CustomX:          baseKey.CustomX,
+						CustomY:          baseKey.CustomY,
+						IsCustomPosition: baseKey.IsCustomPosition,
+					}
+				}
 				
-				// Store the new combination
+				// Store the new blank combination
 				layerMods[comboKey] = newComboKeys
 			}
 		}
