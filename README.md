@@ -12,6 +12,9 @@ A powerful keyboard cheatsheet application for visualizing and customizing keybo
 - 🖱️ **Drag & Drop**: Reposition keys anywhere on the layout
 - 📱 **Responsive Design**: Works on different screen sizes
 - ⚡ **Real-time Updates**: Changes apply instantly
+- ❤️ **Favorites**: Mark frequently used palette items as favorites
+- 🔍 **Advanced Search**: Filter palette by key type or favorites
+- 🎨 **Enhanced Sorting**: Sort palette items by time or color
 
 ## Screenshots
 

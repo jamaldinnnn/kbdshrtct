@@ -1,35 +1,35 @@
 import './style.css';
 import './app.css';
 
+// Import Wails bindings
 import {
+    // Core keyboard methods
+    GetConfig,
+    SetCurrentLayer,
     GetCurrentLayer,
     GetAvailableLayers,
-    SetCurrentLayer,
     UpdateKey,
     UpdateModifierKey,
-    SetActiveModifiers,
     GetActiveModifiers,
+    SetActiveModifiers,
     GetAvailableModifiers,
+    GetKeyboardType,
+    SetKeyboardType,
+    GetAvailableKeyboardTypes,
     AddCustomLayer,
     RemoveCustomLayer,
     UploadKeyImage,
     RemoveKeyImage,
     GetKeyImage,
-    ExportLayout,
-    ImportLayout,
-    GetKeyboardType,
-    SetKeyboardType,
-    GetAvailableKeyboardTypes,
     // New Profile Management methods
     GetAllProfiles,
     GetActiveProfile,
     SetActiveProfile,
     CreateNewProfile,
     UpdateProfileAppearance,
-    DeleteProfile
+    DeleteProfile,
 } from '../wailsjs/go/main/App';
 
-// Global state
 let currentKeys = [];
 let currentLayer = 'base';
 let currentKeyboardType = 'corne'; // 'corne' or 'tenkeyless'
@@ -37,6 +37,7 @@ let availableLayers = [];
 let activeModifiers = [];
 let availableModifiers = [];
 let keyPaletteHistory = []; // Persistent library of custom key designs
+let showOnlyUnusedKeys = false; // Track whether to show only unused keys
 
 // Profile state
 let profiles = [];
@@ -61,39 +62,27 @@ document.addEventListener('DOMContentLoaded', function() {
 async function initializeApp() {
     try {
         console.log('Initializing app...');
-        
-        // Load palette history first
-        loadKeyPaletteHistory();
-        
-        // Load profiles first
-        console.log('Loading profiles...');
-        await loadProfiles();
-        
-        // Load initial data in sequence to avoid race conditions
-        console.log('Loading keyboard type...');
-        await loadKeyboardType();
-        
-        console.log('Loading layers...');
-        await loadLayers();
-        
-        console.log('Loading available modifiers...');
-        await loadAvailableModifiers();
-        
-        console.log('Loading active modifiers...');
-        await loadActiveModifiers();
-        
-        console.log('Loading current layer...');
-        await loadCurrentLayer();
-        
+
+        // Load all data in parallel
+        await Promise.all([
+            loadKeyPaletteHistory(),
+            loadProfiles(),
+            loadKeyboardType(),
+            loadLayers(),
+            loadAvailableModifiers(),
+            loadActiveModifiers(),
+            loadCurrentLayer()
+        ]);
+
         console.log('Rendering UI...');
         // Render the UI
         renderApp();
         renderKeyboard();
         renderLayerSelector();
         renderModifierPanel();
-        
+
         console.log('App initialized successfully');
-        
+
     } catch (error) {
         console.error('Failed to initialize app:', error);
         // Show error to user
@@ -254,6 +243,12 @@ function renderApp() {
                         <span class="search-icon">🔍</span>
                     </div>
                     <div class="palette-controls">
+                        <button id="toggle-unused-btn" class="btn-secondary" title="Show only unused keys">
+                            <span>🔄</span> Show Unused
+                        </button>
+                        <button id="add-custom-key-btn" class="btn-secondary" title="Add custom key to palette">
+                            <span>➕</span> Add Key
+                        </button>
                         <button id="palette-sort-btn" class="btn-secondary palette-sort-btn" title="Toggle sort: Time / Color">
                             📅 Time
                         </button>
@@ -380,6 +375,82 @@ function renderApp() {
                 </div>
                 <div class="key-palette-grid" id="key-palette-grid">
                     <!-- Keys will be populated here -->
+                </div>
+            </div>
+        </div>
+        
+        <!-- Palette Key Editor Modal -->
+        <div id="palette-key-editor-modal" class="modal tertiary-modal" style="display: none;">
+            <div class="modal-content key-editor-content">
+                <span class="close">&times;</span>
+                <h2>Edit Palette Key</h2>
+                
+                <div class="key-editor-grid">
+                    <!-- Image Slots Section -->
+                    <div class="image-slots-section">
+                        <h3>Images</h3>
+                        <div class="image-inventory">
+                            <div class="image-slot primary-slot" data-slot="primary">
+                                <div class="slot-content">
+                                    <div class="slot-placeholder">
+                                        <div class="upload-icon">📸</div>
+                                        <div class="slot-label">Main Image</div>
+                                        <div class="slot-hint">Click or drop image</div>
+                                    </div>
+                                </div>
+                                <input type="file" class="hidden-file-input" accept="image/*">
+                            </div>
+                            
+                            <div class="image-slot secondary-slot" data-slot="secondary">
+                                <div class="slot-content">
+                                    <div class="slot-placeholder">
+                                        <div class="upload-icon">🏷️</div>
+                                        <div class="slot-label">Top Corner</div>
+                                        <div class="slot-hint">Small overlay</div>
+                                    </div>
+                                </div>
+                                <input type="file" class="hidden-file-input" accept="image/*">
+                            </div>
+                            
+                            <div class="image-slot tertiary-slot" data-slot="tertiary">
+                                <div class="slot-content">
+                                    <div class="slot-placeholder">
+                                        <div class="upload-icon">🔖</div>
+                                        <div class="slot-label">Bottom Corner</div>
+                                        <div class="slot-hint">Small overlay</div>
+                                    </div>
+                                </div>
+                                <input type="file" class="hidden-file-input" accept="image/*">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Key Properties Section -->
+                    <div class="key-properties-section">
+                        <h3>Properties</h3>
+                        <div class="property-group">
+                            <label for="palette-key-label-input">Text Label</label>
+                            <input type="text" id="palette-key-label-input" placeholder="Fallback text (optional)">
+                        </div>
+                        
+                        <div class="property-group">
+                            <label for="palette-key-description-input">Description</label>
+                            <input type="text" id="palette-key-description-input" placeholder="Tooltip description">
+                        </div>
+                        
+                        <div class="property-group">
+                            <label for="palette-key-color-input">Background Color</label>
+                            <div class="color-input-wrapper">
+                                <input type="color" id="palette-key-color-input">
+                                <span class="color-label"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="modal-actions">
+                    <button type="button" id="cancel-palette-key-edit" class="btn-secondary">Cancel</button>
+                    <button type="button" id="save-palette-key-edit" class="btn-primary">Save Changes</button>
                 </div>
             </div>
         </div>
@@ -600,6 +671,7 @@ function setupModalControls() {
     const keyModal = document.getElementById('key-editor-modal');
     const layerModal = document.getElementById('add-layer-modal');
     const paletteModal = document.getElementById('key-palette-modal');
+    const paletteKeyEditorModal = document.getElementById('palette-key-editor-modal');
     const modifierModal = document.getElementById('add-modifier-modal');
     const settingsModal = document.getElementById('settings-modal');
     const closeBtns = document.querySelectorAll('.close');
@@ -609,6 +681,8 @@ function setupModalControls() {
     const addToPaletteBtn = document.getElementById('add-to-palette-btn');
     const cancelAddLayerBtn = document.getElementById('cancel-add-layer');
     const cancelAddModifierBtn = document.getElementById('cancel-add-modifier');
+    const cancelPaletteKeyEditBtn = document.getElementById('cancel-palette-key-edit');
+    const savePaletteKeyEditBtn = document.getElementById('save-palette-key-edit');
     
     // Close button handlers
     closeBtns.forEach(btn => {
@@ -618,6 +692,7 @@ function setupModalControls() {
             paletteModal.style.display = 'none';
             modifierModal.style.display = 'none';
             settingsModal.style.display = 'none';
+            paletteKeyEditorModal.style.display = 'none';
         };
     });
     
@@ -628,10 +703,19 @@ function setupModalControls() {
     };
     cancelAddLayerBtn.onclick = () => layerModal.style.display = 'none';
     cancelAddModifierBtn.onclick = () => modifierModal.style.display = 'none';
+    cancelPaletteKeyEditBtn.onclick = () => {
+        paletteKeyEditorModal.style.display = 'none';
+        resetPaletteKeyEditorHandlerFlags();
+    };
     
     // Save button handler
     saveEditBtn.onclick = async () => {
         await saveKeyEdit();
+    };
+    
+    // Save palette key edit button handler
+    savePaletteKeyEditBtn.onclick = async () => {
+        await savePaletteKeyEdit();
     };
     
     // Open palette button handler
@@ -655,6 +739,10 @@ function setupModalControls() {
         }
         if (event.target === layerModal) layerModal.style.display = 'none';
         if (event.target === paletteModal) paletteModal.style.display = 'none';
+        if (event.target === paletteKeyEditorModal) {
+        paletteKeyEditorModal.style.display = 'none';
+        resetPaletteKeyEditorHandlerFlags();
+    }
         if (event.target === modifierModal) modifierModal.style.display = 'none';
         if (event.target === settingsModal) settingsModal.style.display = 'none';
     };
@@ -1134,6 +1222,132 @@ function setupImageSlotHandlers() {
     });
 }
 
+function showPaletteKeyEditor(keyData) {
+    const modal = document.getElementById('palette-key-editor-modal');
+    
+    // Extract extra data from description
+    let extraData = {};
+    let userDescription = '';
+    if (keyData.description) {
+        try {
+            extraData = JSON.parse(keyData.description);
+            userDescription = extraData.userDescription || '';
+        } catch (e) {
+            // Not JSON, treat as plain text description
+            userDescription = keyData.description;
+            extraData = {};
+        }
+    }
+    
+    // Populate form fields with current values
+    document.getElementById('palette-key-label-input').value = keyData.label || '';
+    document.getElementById('palette-key-description-input').value = userDescription;
+    document.getElementById('palette-key-color-input').value = keyData.color || '#ffffff';
+    
+    // Update color label
+    const colorLabel = document.querySelector('#palette-key-editor-modal .color-label');
+    if (colorLabel) {
+        colorLabel.textContent = keyData.color || '#ffffff';
+    }
+    
+    // Remove any existing event listeners and add new color input change handler
+    const colorInput = document.getElementById('palette-key-color-input');
+    colorInput.replaceWith(colorInput.cloneNode(true));
+    const newColorInput = document.getElementById('palette-key-color-input');
+    newColorInput.value = keyData.color || '#ffffff';
+    newColorInput.addEventListener('input', (e) => {
+        colorLabel.textContent = e.target.value;
+    });
+    
+    // Clear any existing image data in the modal
+    clearModalData(modal);
+    
+    // Update image slots directly (bypassing the display check)
+    updatePaletteKeyEditorImageSlot('primary', keyData.imageData);
+    updatePaletteKeyEditorImageSlot('secondary', extraData.secondaryImageData);
+    updatePaletteKeyEditorImageSlot('tertiary', extraData.tertiaryImageData);
+    
+    // Store the key ID for saving
+    modal.dataset.editingKeyData = JSON.stringify(keyData);
+    
+    // Show the modal
+    modal.style.display = 'block';
+    
+    // Setup image slot handlers for this modal
+    setupPaletteKeyEditorImageSlots();
+}
+
+function setupPaletteKeyEditorImageSlots() {
+    // Only set up if not already set up
+    const primarySlot = document.querySelector('#palette-key-editor-modal .image-slot.primary-slot');
+    if (primarySlot && !primarySlot.dataset.handlersSetup) {
+        setupImageSlotHandlersForPaletteEditor();
+        primarySlot.dataset.handlersSetup = 'true';
+    }
+}
+
+function resetPaletteKeyEditorHandlerFlags() {
+    const imageSlots = document.querySelectorAll('#palette-key-editor-modal .image-slot');
+    imageSlots.forEach(slot => {
+        // Reset the handler setup flag
+        delete slot.dataset.handlersSetup;
+    });
+}
+
+function setupImageSlotHandlersForPaletteEditor() {
+    const imageSlots = document.querySelectorAll('#palette-key-editor-modal .image-slot');
+    
+    imageSlots.forEach(slot => {
+        const slotType = slot.dataset.slot;
+        const fileInput = slot.querySelector('.hidden-file-input');
+        
+        // Click to upload
+        slot.addEventListener('click', (e) => {
+            // Prevent multiple triggers
+            if (e.target !== slot) return;
+            fileInput.click();
+        });
+        
+        // File input change handler
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                handleImageFile(file, slot, slotType);
+            }
+            // Clear the input to allow selecting the same file again
+            e.target.value = '';
+        });
+        
+        // Drag and drop handlers
+        slot.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            slot.classList.add('drag-over');
+        });
+        
+        slot.addEventListener('dragleave', (e) => {
+            // Only remove class if we're actually leaving the element
+            if (!slot.contains(e.relatedTarget)) {
+                slot.classList.remove('drag-over');
+            }
+        });
+        
+        slot.addEventListener('drop', (e) => {
+            e.preventDefault();
+            slot.classList.remove('drag-over');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                const file = files[0];
+                if (file.type.startsWith('image/')) {
+                    handleImageFile(file, slot, slotType);
+                } else {
+                    alert('Please drop an image file');
+                }
+            }
+        });
+    });
+}
+
 function handleImageFile(file, slot, slotType) {
     // Validate file size (2MB max)
     if (file.size > 2 * 1024 * 1024) {
@@ -1154,12 +1368,29 @@ function handleImageFile(file, slot, slotType) {
         // Update the slot display
         updateSlotImage(slot, imageData, slotType);
         
-        // Store for saving
-        const modal = document.getElementById('key-editor-modal');
-        // Ensure slotType is a string before using string methods
-        const safeSlotType = String(slotType || '');
-        const capitalizedSlotType = safeSlotType.charAt(0).toUpperCase() + safeSlotType.slice(1);
-        modal.dataset[`pending${capitalizedSlotType}ImageData`] = imageData;
+        // Store for saving in the active modal
+        let modal = null;
+        const keyEditorModal = document.getElementById('key-editor-modal');
+        const paletteKeyEditorModal = document.getElementById('palette-key-editor-modal');
+        
+        // Check which modal is currently active
+        if (keyEditorModal && keyEditorModal.style.display !== 'none') {
+            modal = keyEditorModal;
+        } else if (paletteKeyEditorModal && paletteKeyEditorModal.style.display !== 'none') {
+            modal = paletteKeyEditorModal;
+        }
+        
+        // Fallback to key editor modal if neither is definitely active
+        if (!modal) {
+            modal = keyEditorModal || paletteKeyEditorModal;
+        }
+        
+        if (modal) {
+            // Ensure slotType is a string before using string methods
+            const safeSlotType = String(slotType || '');
+            const capitalizedSlotType = safeSlotType.charAt(0).toUpperCase() + safeSlotType.slice(1);
+            modal.dataset[`pending${capitalizedSlotType}ImageData`] = imageData;
+        }
     };
     reader.readAsDataURL(file);
 }
@@ -1218,16 +1449,35 @@ function clearSlotImage(slot, slotType) {
     
     // Remove class and clear data
     slot.classList.remove('has-image');
-    const modal = document.getElementById('key-editor-modal');
-    // Ensure slotType is a string before using string methods
-    const safeSlotType = String(slotType || '');
-    const capitalizedSlotType = safeSlotType.charAt(0).toUpperCase() + safeSlotType.slice(1);
-    const dataKey = `pending${capitalizedSlotType}ImageData`;
-    delete modal.dataset[dataKey];
     
-    // Mark for removal if it was previously saved
-    const removeKey = `remove${capitalizedSlotType}`;
-    modal.dataset[removeKey] = 'true';
+    // Work with the active modal
+    let modal = null;
+    const keyEditorModal = document.getElementById('key-editor-modal');
+    const paletteKeyEditorModal = document.getElementById('palette-key-editor-modal');
+    
+    // Check which modal is currently active
+    if (keyEditorModal && keyEditorModal.style.display !== 'none') {
+        modal = keyEditorModal;
+    } else if (paletteKeyEditorModal && paletteKeyEditorModal.style.display !== 'none') {
+        modal = paletteKeyEditorModal;
+    }
+    
+    // Fallback to key editor modal if neither is definitely active
+    if (!modal) {
+        modal = keyEditorModal || paletteKeyEditorModal;
+    }
+    
+    if (modal) {
+        // Ensure slotType is a string before using string methods
+        const safeSlotType = String(slotType || '');
+        const capitalizedSlotType = safeSlotType.charAt(0).toUpperCase() + safeSlotType.slice(1);
+        const dataKey = `pending${capitalizedSlotType}ImageData`;
+        delete modal.dataset[dataKey];
+        
+        // Mark for removal if it was previously saved
+        const removeKey = `remove${capitalizedSlotType}`;
+        modal.dataset[removeKey] = 'true';
+    }
 }
 
 
@@ -2005,6 +2255,119 @@ function renderModifierPanel() {
     }
 }
 
+function createPersistentPaletteKeyElement(keyData, index) {
+    const keyElement = document.createElement('div');
+    keyElement.className = 'persistent-palette-key';
+    keyElement.style.backgroundColor = keyData.color || '#ffffff';
+    keyElement.draggable = true;
+    keyElement.dataset.keyData = JSON.stringify(keyData);
+    
+    // Extract extra data from description
+    let extraData = {};
+    if (keyData.description) {
+        try {
+            extraData = JSON.parse(keyData.description);
+        } catch (e) {
+            // Not JSON, treat as plain text description
+        }
+    }
+    
+    let keyContent = '';
+    if (keyData.imageData && keyData.imageData.startsWith('data:image/')) {
+        keyContent = `<img class="persistent-palette-key-image" src="${keyData.imageData}" alt="${escapeHtml(keyData.label || 'Key image')}" />`;
+    } else if (keyData.label) {
+        keyContent = `<span class="persistent-palette-key-label">${escapeHtml(keyData.label)}</span>`;
+    } else {
+        keyContent = `<span class="persistent-palette-key-label">?</span>`;
+    }
+    
+    // Add overlay images
+    let overlayImages = '';
+    if (extraData.secondaryImageData) {
+        overlayImages += `<img class="persistent-palette-secondary-image" src="${extraData.secondaryImageData}" alt="Secondary" />`;
+    }
+    if (extraData.tertiaryImageData) {
+        overlayImages += `<img class="persistent-palette-tertiary-image" src="${extraData.tertiaryImageData}" alt="Tertiary" />`;
+    }
+    
+    // Determine text label to show
+    let displayLabel = '';
+    if (extraData.userDescription) {
+        displayLabel = extraData.userDescription;
+    } else if (keyData.label) {
+        displayLabel = keyData.label;
+    } else {
+        displayLabel = 'Untitled';
+    }
+    
+    keyElement.innerHTML = `
+        <div class="persistent-palette-key-content">
+            ${keyContent}
+            <div class="persistent-palette-key-overlay-images">
+                ${overlayImages}
+            </div>
+        </div>
+        <div class="persistent-palette-key-text-label" title="${escapeHtml(displayLabel)}">${escapeHtml(displayLabel)}</div>
+        <button class="persistent-palette-key-delete" title="Delete from palette">×</button>
+        <button class="persistent-palette-key-favorite-toggle ${keyData.favorite ? 'favorited' : ''}" title="${keyData.favorite ? 'Remove from favorites' : 'Add to favorites'}">
+            ${keyData.favorite ? '❤️' : '🤍'}
+        </button>
+        <button class="persistent-palette-key-edit" title="Edit key design">✏️</button>
+    `;
+    
+    // Add drag handlers
+    setupPaletteKeyDragHandlers(keyElement, keyData);
+    
+    // Add delete button handler
+    const deleteBtn = keyElement.querySelector('.persistent-palette-key-delete');
+    deleteBtn.replaceWith(deleteBtn.cloneNode(true));
+    keyElement.querySelector('.persistent-palette-key-delete').addEventListener('click', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        if (confirm('Delete this design from your palette? This cannot be undone.')) {
+            // Remove from history
+            if (deleteFromKeyPaletteHistory(keyData.id)) {
+                applyPaletteFilters();
+            }
+        }
+    });
+    
+    // Add favorite toggle handler
+    const favoriteBtn = keyElement.querySelector('.persistent-palette-key-favorite-toggle');
+    favoriteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        togglePaletteItemFavorite(keyData.id);
+    });
+    
+    // Add edit button handler
+    const editBtn = keyElement.querySelector('.persistent-palette-key-edit');
+    editBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        showPaletteKeyEditor(keyData);
+    });
+    
+    // Add double-click handler for editing (alternative way to edit)
+    keyElement.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
+        showPaletteKeyEditor(keyData);
+    });
+    
+    // Add click handler to apply the design to the current key
+    keyElement.addEventListener('click', (e) => {
+        // Don't apply if clicking on action buttons
+        if (e.target.closest('.persistent-palette-key-delete') || 
+            e.target.closest('.persistent-palette-key-favorite-toggle') || 
+            e.target.closest('.persistent-palette-key-edit')) {
+            return;
+        }
+        
+        // Apply the palette key design to the currently selected key
+        applyPaletteKeyToCurrentKey(keyData);
+    });
+    
+    return keyElement;
+}
+
 function applyCustomModifierColors() {
     // Remove existing custom style tag if it exists
     const existingStyle = document.getElementById('custom-modifier-colors');
@@ -2171,11 +2534,12 @@ function showKeyEditor(key) {
     updateImageSlotDisplay('tertiary', extraData.tertiaryImageData);
     
     // Clear pending data and flags
-    clearModalData(modal);
+    clearAllModalData();
     
     // Store the key ID for saving
     modal.dataset.editingKeyId = key.id;
     
+    // Show the modal
     modal.style.display = 'block';
 }
 
@@ -2246,7 +2610,7 @@ function addCurrentKeyToPalette() {
     
     // Get current form values
     tempKey.label = document.getElementById('key-label-input').value || '';
-    tempKey.color = document.getElementById('key-color-input').value || '#ffffff';
+    tempKey.color = document.getElementById('key-color-input').value || '';
     
     // Handle images
     if (modal.dataset.pendingPrimaryImageData) {
@@ -2296,12 +2660,27 @@ function deleteFromKeyPaletteHistory(designId) {
         // Update localStorage
         localStorage.setItem('keyPaletteHistory', JSON.stringify(keyPaletteHistory));
         console.log('Removed design from palette history:', designId);
+        // Refresh persistent palette
+        applyPaletteFilters();
         return true;
     }
     return false;
 }
 
 function addToKeyPaletteHistory(key) {
+    // Get the current key being edited to access tags
+    const modal = document.getElementById('key-editor-modal');
+    const keyId = modal.dataset.editingKeyId;
+    
+    // Determine keyboard type from current configuration
+    const keyboardType = currentKeyboardType || 'corne';
+    
+    // Count keys in current layer for better keyboard type detection
+    let layerKeysCount = 0;
+    if (currentKeys && Array.isArray(currentKeys)) {
+        layerKeysCount = currentKeys.length;
+    }
+    
     // Create a design object with just the visual properties
     const design = {
         id: `design_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Unique ID
@@ -2311,7 +2690,13 @@ function addToKeyPaletteHistory(key) {
         description: key.description || '{}',
         timestamp: Date.now(),
         sourceLayer: currentLayer,
-        sourceModifiers: [...activeModifiers]
+        sourceLayerKeysCount: layerKeysCount,
+        sourceModifiers: [...activeModifiers],
+        sourceKeyboardType: keyboardType,
+        // New fields for advanced features
+        favorite: false, // Default to not favorited
+        keyType: key.keyType || 'normal',
+        usageCount: 0
     };
     
     // Check if this exact design already exists in history (avoid duplicates)
@@ -2338,12 +2723,61 @@ function loadKeyPaletteHistory() {
         const saved = localStorage.getItem('keyPaletteHistory');
         if (saved) {
             keyPaletteHistory = JSON.parse(saved);
+            
+            // Ensure all items have the required fields with default values
+            keyPaletteHistory = keyPaletteHistory.map(item => ({
+                id: item.id || `design_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                imageData: item.imageData || null,
+                label: item.label || '',
+                color: item.color || '#ffffff',
+                description: item.description || '{}',
+                timestamp: item.timestamp || Date.now(),
+                sourceLayer: item.sourceLayer || 'base',
+                sourceLayerKeysCount: item.sourceLayerKeysCount || 0,
+                sourceModifiers: item.sourceModifiers || [],
+                sourceKeyboardType: item.sourceKeyboardType || 'corne',
+                // New fields with defaults
+                favorite: typeof item.favorite === 'boolean' ? item.favorite : false,
+                keyType: item.keyType || 'normal',
+                usageCount: typeof item.usageCount === 'number' ? item.usageCount : 0
+            }));
+            
             console.log('Loaded palette history:', keyPaletteHistory.length, 'designs');
         }
     } catch (error) {
         console.error('Failed to load palette history:', error);
         keyPaletteHistory = [];
     }
+}
+
+// Create a new blank custom key and add it to the palette
+function createNewCustomKey() {
+    // Create a new blank key design
+    const newKeyDesign = {
+        id: `design_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`, // Unique ID
+        imageData: null,
+        label: '',
+        color: '#ffffff',
+        description: '{}',
+        timestamp: Date.now(),
+        sourceLayer: currentLayer,
+        sourceModifiers: [...activeModifiers],
+        favorite: false,
+        keyType: 'normal',
+        usageCount: 0
+    };
+    
+    // Add to palette history
+    keyPaletteHistory.push(newKeyDesign);
+    
+    // Save to localStorage for persistence
+    localStorage.setItem('keyPaletteHistory', JSON.stringify(keyPaletteHistory));
+    
+    // Refresh persistent palette
+    applyPaletteFilters();
+    
+    // Show a message to the user
+    console.log('Added new custom key to palette');
 }
 
 function setupPersistentPalette() {
@@ -2353,34 +2787,35 @@ function setupPersistentPalette() {
     const searchInput = document.getElementById('palette-search-input');
     const sortBtn = document.getElementById('palette-sort-btn');
     const resizeHandle = document.getElementById('palette-resize-handle');
-    
+    const toggleUnusedBtn = document.getElementById('toggle-unused-btn');
+
     if (!palettePanel || !toggleBtn || !showPaletteBtn || !searchInput || !sortBtn || !resizeHandle) {
         console.warn('Persistent palette elements not found');
         return;
     }
-    
+
     // Toggle palette visibility
     toggleBtn.onclick = () => {
         hidePalette();
     };
-    
+
     // Show palette button click handler
     showPaletteBtn.onclick = () => {
         showPalette();
     };
-    
+
     // Search functionality
     searchInput.addEventListener('input', (e) => {
         const searchTerm = e.target.value.toLowerCase().trim();
         filterPaletteKeys(searchTerm);
     });
-    
+
     // Sort toggle functionality
     let currentSortType = 'time'; // Default to time sorting
     sortBtn.addEventListener('click', () => {
         // Toggle between time and color sorting
         currentSortType = currentSortType === 'time' ? 'color' : 'time';
-        
+
         // Update button appearance and text
         if (currentSortType === 'color') {
             sortBtn.innerHTML = '🎨 Color';
@@ -2391,11 +2826,26 @@ function setupPersistentPalette() {
             sortBtn.classList.remove('active-color');
             sortBtn.title = 'Toggle sort: Time / Color';
         }
-        
+
         // Apply new sorting
         sortPaletteKeys(currentSortType);
     });
-    
+
+    // Add custom key button functionality
+    const addCustomKeyBtn = document.getElementById('add-custom-key-btn');
+    if (addCustomKeyBtn) {
+        addCustomKeyBtn.addEventListener('click', () => {
+            createNewCustomKey();
+        });
+    }
+
+    // Toggle unused keys button functionality
+    if (toggleUnusedBtn) {
+        toggleUnusedBtn.addEventListener('click', () => {
+            toggleUnusedKeysFilter();
+        });
+    }
+
     // Clear search on escape
     searchInput.addEventListener('keydown', (e) => {
         if (e.key === 'Escape') {
@@ -2403,12 +2853,416 @@ function setupPersistentPalette() {
             filterPaletteKeys('');
         }
     });
-    
+
+    // Add event listener for advanced search/filter options
+    setupAdvancedPaletteFilters();
+
     // Setup resize functionality
     setupPaletteResize(resizeHandle, palettePanel);
-    
+
     // Initial render
+    applyPaletteFilters();
+}
+
+function toggleUnusedKeysFilter() {
+    showOnlyUnusedKeys = !showOnlyUnusedKeys;
+    const toggleUnusedBtn = document.getElementById('toggle-unused-btn');
+    if (showOnlyUnusedKeys) {
+        toggleUnusedBtn.innerHTML = '<span>🔄</span> Show All';
+        toggleUnusedBtn.title = 'Show all keys in the palette';
+        toggleUnusedBtn.classList.add('active');
+    } else {
+        toggleUnusedBtn.innerHTML = '<span>🔄</span> Show Unused';
+        toggleUnusedBtn.title = 'Show only unused keys';
+        toggleUnusedBtn.classList.remove('active');
+    }
+    applyPaletteFilters();
+}
+
+function renderPersistentPalette(sortBy = 'time', searchTerm = '') {
+    const grid = document.getElementById('persistent-palette-grid');
+    const emptyState = document.getElementById('palette-empty-state');
+    const noResults = document.getElementById('palette-no-results');
+    
+    let keysToRender = [...keyPaletteHistory];
+
+    // Filter by search term
+    if (searchTerm) {
+        const lowerCaseSearchTerm = searchTerm.toLowerCase();
+        keysToRender = keysToRender.filter(key => {
+            const label = key.label || '';
+            const description = key.description || '';
+            return label.toLowerCase().includes(lowerCaseSearchTerm) ||
+                   description.toLowerCase().includes(lowerCaseSearchTerm);
+        });
+    }
+
+    // Filter for unused keys if the toggle is active
+    if (showOnlyUnusedKeys) {
+        const usedKeyIds = new Set(currentKeys.map(k => k.id));
+        keysToRender = keysToRender.filter(key => !usedKeyIds.has(key.id));
+    }
+
+    // Sort keys
+    if (sortBy === 'color') {
+        keysToRender.sort((a, b) => {
+            const colorA = a.color || '#ffffff';
+            const colorB = b.color || '#ffffff';
+            return colorA.localeCompare(colorB);
+        });
+    } else { // Default to sorting by time (most recent first)
+        keysToRender.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    }
+
+    if (keysToRender.length === 0) {
+        grid.innerHTML = '';
+        if (searchTerm) {
+            emptyState.style.display = 'none';
+            noResults.style.display = 'block';
+        } else {
+            emptyState.style.display = 'block';
+            noResults.style.display = 'none';
+        }
+        return;
+    }
+
+    emptyState.style.display = 'none';
+    noResults.style.display = 'none';
+
+    grid.innerHTML = keysToRender.map(key => {
+        let keyContent = '';
+        if (key.imageData && key.imageData.startsWith('data:image/')) {
+            keyContent = `<img class="key-image" src="${key.imageData}" alt="${escapeHtml(key.label || 'Key image')}" />`;
+        } else if (key.label && key.label.trim() !== '') {
+            keyContent = `<span class="key-label">${escapeHtml(key.label)}</span>`;
+        } else {
+            keyContent = `<span class="key-placeholder"></span>`;
+        }
+
+        let extraData = {};
+        if (key.description) {
+            try {
+                extraData = JSON.parse(key.description);
+            } catch (e) {
+                extraData = { userDescription: key.description };
+            }
+        }
+
+        let overlayImages = '';
+        if (extraData.secondaryImageData) {
+            overlayImages += `<img class="key-secondary-image" src="${extraData.secondaryImageData}" alt="Secondary image" />`;
+        }
+        if (extraData.tertiaryImageData) {
+            overlayImages += `<img class="key-tertiary-image" src="${extraData.tertiaryImageData}" alt="Tertiary image" />`;
+        }
+
+        const tooltipText = extraData.userDescription || key.label || 'Custom key';
+        const backgroundColor = key.color || '#ffffff';
+
+        return `
+            <div class="key palette-key" 
+                 data-key-data='${escapeHtml(JSON.stringify(key))}'
+                 style="background-color: ${backgroundColor};"
+                 title="${tooltipText}">
+                ${keyContent}
+                ${overlayImages}
+                <div class="palette-key-actions">
+                    <button class="palette-key-edit-btn" title="Edit Key">✏️</button>
+                    <button class="palette-key-delete-btn" title="Delete Key">🗑️</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    // Add event listeners for the new palette keys
+    grid.querySelectorAll('.palette-key').forEach(keyEl => {
+        keyEl.addEventListener('click', (e) => {
+            // Don't trigger key application if clicking a button
+            if (e.target.closest('button')) return;
+
+            const keyData = JSON.parse(keyEl.dataset.keyData);
+            applyPaletteKeyToActiveKey(keyData);
+        });
+
+        keyEl.querySelector('.palette-key-edit-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            const keyData = JSON.parse(keyEl.dataset.keyData);
+            showPaletteKeyEditor(keyData);
+        });
+
+        keyEl.querySelector('.palette-key-delete-btn').addEventListener('click', (e) => {
+            e.stopPropagation();
+            const keyData = JSON.parse(keyEl.dataset.keyData);
+            deleteKeyFromPalette(keyData.id);
+        });
+    });
+}
+
+function setupAdvancedPaletteFilters() {
+    // Create advanced filter elements if they don't exist
+    const paletteHeader = document.querySelector('.palette-header');
+    if (!paletteHeader) return;
+    
+    // Check if advanced filters already exist
+    let advancedFilters = document.getElementById('palette-advanced-filters');
+    if (!advancedFilters) {
+        // Create and add the advanced filters if they don't exist
+        advancedFilters = document.createElement('div');
+        advancedFilters.id = 'palette-advanced-filters';
+        advancedFilters.className = 'palette-advanced-filters';
+        advancedFilters.innerHTML = `
+            <div class="palette-filter-group">
+                <button id="palette-filter-favorites" class="btn-secondary palette-filter-btn" title="Show only favorites">
+                    ❤️ Favorites
+                </button>
+                <select id="palette-key-type-filter" class="palette-key-type-filter" title="Filter by key type">
+                    <option value="all">All Types</option>
+                    <option value="corne">Corne Keys</option>
+                    <option value="tenkeyless">TKL Keys</option>
+                </select>
+            </div>
+        `;
+        
+        // Insert after the existing controls
+        const existingControls = paletteHeader.querySelector('.palette-controls');
+        if (existingControls) {
+            paletteHeader.insertBefore(advancedFilters, existingControls);
+        } else {
+            paletteHeader.appendChild(advancedFilters);
+        }
+    }
+    
+    // Always add event listeners for advanced filters to ensure they work
+    const favoritesBtn = document.getElementById('palette-filter-favorites');
+    const keyTypeFilter = document.getElementById('palette-key-type-filter');
+    
+    if (favoritesBtn) {
+        // Remove any existing event listeners to prevent duplicates
+        const newFavoritesBtn = favoritesBtn.cloneNode(true);
+        favoritesBtn.parentNode.replaceChild(newFavoritesBtn, favoritesBtn);
+        newFavoritesBtn.addEventListener('click', toggleFavoritesFilter);
+    }
+    
+    if (keyTypeFilter) {
+        // Remove any existing event listeners to prevent duplicates
+        const newKeyTypeFilter = keyTypeFilter.cloneNode(true);
+        keyTypeFilter.parentNode.replaceChild(newKeyTypeFilter, keyTypeFilter);
+        newKeyTypeFilter.addEventListener('change', () => {
+            applyPaletteFilters();
+        });
+    }
+}
+
+function toggleFavoritesFilter() {
+    const favBtn = document.getElementById('palette-filter-favorites');
+    const isFiltered = favBtn.classList.contains('active');
+    
+    if (isFiltered) {
+        favBtn.classList.remove('active');
+        favBtn.innerHTML = '❤️ Favorites';
+        favBtn.title = 'Show only favorites';
+    } else {
+        favBtn.classList.add('active');
+        favBtn.innerHTML = '❤️ Showing Favorites';
+        favBtn.title = 'Show all items';
+    }
+    
+    applyPaletteFilters();
+}
+
+
+
+function resetPaletteFilters() {
+    // Reset all filter controls (except key types dropdown which was removed)
+    const favBtn = document.getElementById('palette-filter-favorites');
+    const searchInput = document.getElementById('palette-search-input');
+    
+    if (favBtn) {
+        favBtn.classList.remove('active');
+        favBtn.innerHTML = '❤️ Favorites';
+        favBtn.title = 'Show only favorites';
+    }
+    if (searchInput) searchInput.value = '';
+    
+    // Reset unused keys toggle
+    showOnlyUnusedKeys = false;
+    const unusedBtn = document.getElementById('toggle-unused-btn');
+    if (unusedBtn) {
+        unusedBtn.innerHTML = '<span>🔄</span> Show Unused';
+        unusedBtn.title = 'Show only unused keys';
+        unusedBtn.classList.remove('active');
+    }
+    
+    // Re-render the palette with all items
     renderPersistentPalette();
+}
+
+// Helper function to check if a palette key design is used in the current keyboard layout
+function isKeyUsedInLayout(paletteKeyDesign) {
+    // Check if any key in the current layout matches this palette design
+    return currentKeys.some(key => {
+        // Compare by image data (primary image)
+        if (key.imageData && paletteKeyDesign.imageData && 
+            key.imageData === paletteKeyDesign.imageData) {
+            return true;
+        }
+        
+        // Compare by label and color when no image
+        if (!key.imageData && !paletteKeyDesign.imageData &&
+            key.label === paletteKeyDesign.label &&
+            key.color === paletteKeyDesign.color) {
+            return true;
+        }
+        
+        // Check secondary/tertiary images
+        let keyExtraData = {};
+        let paletteExtraData = {};
+        
+        try {
+            if (key.description) keyExtraData = JSON.parse(key.description);
+            if (paletteKeyDesign.description) paletteExtraData = JSON.parse(paletteKeyDesign.description);
+        } catch (e) {
+            // Ignore parsing errors
+        }
+        
+        // Compare secondary images
+        if (keyExtraData.secondaryImageData && paletteExtraData.secondaryImageData &&
+            keyExtraData.secondaryImageData === paletteExtraData.secondaryImageData) {
+            return true;
+        }
+        
+        // Compare tertiary images
+        if (keyExtraData.tertiaryImageData && paletteExtraData.tertiaryImageData &&
+            keyExtraData.tertiaryImageData === paletteExtraData.tertiaryImageData) {
+            return true;
+        }
+        
+        return false;
+    });
+}
+
+function applyPaletteFilters() {
+    const searchTerm = document.getElementById('palette-search-input').value.toLowerCase().trim();
+    const favoritesOnly = document.getElementById('palette-filter-favorites').classList.contains('active');
+    const keyTypeFilter = document.getElementById('palette-key-type-filter');
+    const keyTypeValue = keyTypeFilter ? keyTypeFilter.value : 'all';
+    
+    // Filter designs based on all criteria
+    const filteredDesigns = keyPaletteHistory.filter(design => {
+        // Search term filter
+        if (searchTerm) {
+            const matchesSearch = 
+                (design.label && design.label.toLowerCase().includes(searchTerm)) ||
+                (design.description && design.description.toLowerCase().includes(searchTerm));
+            
+            if (!matchesSearch) return false;
+        }
+        
+        // Favorites filter
+        if (favoritesOnly && !design.favorite) {
+            return false;
+        }
+        
+        // Unused keys filter
+        if (showOnlyUnusedKeys && isKeyUsedInLayout(design)) {
+            return false;
+        }
+        
+        // Key type filter
+        if (keyTypeValue !== 'all') {
+            // Check if design has source information about keyboard type
+            if (design.sourceKeyboardType) {
+                if (keyTypeValue === 'corne' && design.sourceKeyboardType !== 'corne') {
+                    return false;
+                }
+                if (keyTypeValue === 'tenkeyless' && design.sourceKeyboardType !== 'tenkeyless') {
+                    return false;
+                }
+            } else if (design.sourceLayer) {
+                // Infer keyboard type from layer information
+                // Corne layouts typically have fewer than 50 keys
+                const isCorneDesign = design.sourceLayer === 'base' || 
+                                     design.sourceLayer === 'lower' || 
+                                     design.sourceLayer === 'raise' ||
+                                     (design.sourceLayerKeysCount && design.sourceLayerKeysCount <= 50);
+                
+                if (keyTypeValue === 'corne' && !isCorneDesign) {
+                    return false;
+                }
+                if (keyTypeValue === 'tenkeyless' && isCorneDesign) {
+                    return false;
+                }
+            }
+        }
+        
+        return true;
+    });
+    
+    // Render filtered results
+    renderFilteredPalette(filteredDesigns);
+}
+
+function renderFilteredPalette(filteredDesigns) {
+    const paletteGrid = document.getElementById('persistent-palette-grid');
+    const emptyState = document.getElementById('palette-empty-state');
+    const noResultsState = document.getElementById('palette-no-results');
+    
+    if (!paletteGrid) return;
+    
+    // Clear existing content
+    paletteGrid.innerHTML = '';
+    
+    if (filteredDesigns.length === 0) {
+        if (emptyState) emptyState.style.display = 'none';
+        if (noResultsState) noResultsState.style.display = 'block';
+        return;
+    }
+    
+    if (emptyState) emptyState.style.display = 'none';
+    if (noResultsState) noResultsState.style.display = 'none';
+    
+    // Check if we're in favorites-only mode
+    const favoritesOnly = document.getElementById('palette-filter-favorites').classList.contains('active');
+    
+    // Adjust layout based on favorites mode
+    if (favoritesOnly) {
+        // Use flex layout for favorites to reduce spacing
+        paletteGrid.style.display = 'flex';
+        paletteGrid.style.flexWrap = 'wrap';
+        paletteGrid.style.justifyContent = 'flex-start';
+        paletteGrid.style.gap = '0.5rem';
+    } else {
+        // Use grid layout for normal view - ensure consistent spacing
+        paletteGrid.style.display = 'grid';
+        paletteGrid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(80px, 1fr))';
+        paletteGrid.style.gap = '0.75rem';
+    }
+    
+    // Sort filtered designs
+    const sortBtn = document.getElementById('palette-sort-btn');
+    const currentSort = (sortBtn && sortBtn.classList.contains('active-color')) ? 'color' : 'time';
+    
+    let sortedFilteredDesigns = [...filteredDesigns];
+    if (currentSort === 'time') {
+        sortedFilteredDesigns.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    } else if (currentSort === 'color') {
+        sortedFilteredDesigns.sort((a, b) => {
+            const colorA = a.color || '#ffffff';
+            const colorB = b.color || '#ffffff';
+            const hslA = hexToHsl(colorA);
+            const hslB = hexToHsl(colorB);
+            
+            if (hslA.h !== hslB.h) return hslA.h - hslB.h;
+            if (hslA.s !== hslB.s) return hslB.s - hslA.s;
+            return hslB.l - hslA.l;
+        });
+    }
+    
+    // Render filtered and sorted designs
+    sortedFilteredDesigns.forEach((design, index) => {
+        const paletteKeyElement = createPersistentPaletteKeyElement(design, index);
+        paletteGrid.appendChild(paletteKeyElement);
+    });
 }
 
 function setupPaletteResize(resizeHandle, palettePanel) {
@@ -2498,71 +3352,31 @@ function showPalette() {
     }
 }
 
-function renderPersistentPalette() {
-    const paletteGrid = document.getElementById('persistent-palette-grid');
-    const emptyState = document.getElementById('palette-empty-state');
-    const sortBtn = document.getElementById('palette-sort-btn');
-    
-    if (!paletteGrid || !emptyState) {
-        console.warn('Persistent palette grid elements not found');
-        return;
-    }
-    
-    // Clear existing content
-    paletteGrid.innerHTML = '';
-    
-    if (keyPaletteHistory.length === 0) {
-        emptyState.style.display = 'block';
-        return;
-    }
-    
-    emptyState.style.display = 'none';
-    
-    // Get current sort type from button state (default to time)
-    const currentSort = (sortBtn && sortBtn.classList.contains('active-color')) ? 'color' : 'time';
-    let sortedDesigns = [...keyPaletteHistory];
-    
-    // Apply sorting
-    if (currentSort === 'time') {
-        // Sort by timestamp (newest first)
-        sortedDesigns.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-    } else if (currentSort === 'color') {
-        // Sort by color (group similar colors together)
-        sortedDesigns.sort((a, b) => {
-            const colorA = a.color || '#ffffff';
-            const colorB = b.color || '#ffffff';
-            
-            // Convert to HSL for better color grouping
-            const hslA = hexToHsl(colorA);
-            const hslB = hexToHsl(colorB);
-            
-            // Sort by hue first, then saturation, then lightness
-            if (hslA.h !== hslB.h) {
-                return hslA.h - hslB.h;
-            }
-            if (hslA.s !== hslB.s) {
-                return hslB.s - hslA.s; // Higher saturation first
-            }
-            return hslB.l - hslA.l; // Higher lightness first
-        });
-    }
-    
-    sortedDesigns.forEach((design, index) => {
-        const paletteKeyElement = createPersistentPaletteKeyElement(design, index);
-        paletteGrid.appendChild(paletteKeyElement);
-    });
-}
+
 
 function sortPaletteKeys(sortType) {
     const paletteGrid = document.getElementById('persistent-palette-grid');
     const emptyState = document.getElementById('palette-empty-state');
     const noResultsState = document.getElementById('palette-no-results');
     
-    if (!paletteGrid || keyPaletteHistory.length === 0) {
+    if (!paletteGrid) {
         return;
     }
     
-    let sortedDesigns = [...keyPaletteHistory];
+    // Check if we're in favorites-only mode
+    const favoritesOnly = document.getElementById('palette-filter-favorites').classList.contains('active');
+    
+    // Filter designs based on current mode
+    let designsToSort = [...keyPaletteHistory];
+    if (favoritesOnly) {
+        designsToSort = designsToSort.filter(design => design.favorite);
+    }
+    
+    if (designsToSort.length === 0) {
+        return;
+    }
+    
+    let sortedDesigns = [...designsToSort];
     
     if (sortType === 'time') {
         // Sort by timestamp (newest first)
@@ -2592,6 +3406,20 @@ function sortPaletteKeys(sortType) {
     paletteGrid.innerHTML = '';
     emptyState.style.display = 'none';
     noResultsState.style.display = 'none';
+    
+    // Adjust layout based on favorites mode
+    if (favoritesOnly) {
+        // Use flex layout for favorites to reduce spacing
+        paletteGrid.style.display = 'flex';
+        paletteGrid.style.flexWrap = 'wrap';
+        paletteGrid.style.justifyContent = 'flex-start';
+        paletteGrid.style.gap = '0.5rem';
+    } else {
+        // Use grid layout for normal view - ensure consistent spacing
+        paletteGrid.style.display = 'grid';
+        paletteGrid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(80px, 1fr))';
+        paletteGrid.style.gap = '0.75rem';
+    }
     
     sortedDesigns.forEach((design, index) => {
         const paletteKeyElement = createPersistentPaletteKeyElement(design, index);
@@ -2634,145 +3462,80 @@ function hexToHsl(hex) {
 }
 
 function filterPaletteKeys(searchTerm) {
-    const paletteGrid = document.getElementById('persistent-palette-grid');
-    const emptyState = document.getElementById('palette-empty-state');
-    const noResultsState = document.getElementById('palette-no-results');
-    
-    if (!paletteGrid || !emptyState || !noResultsState) {
-        console.warn('Palette filter elements not found');
-        return;
-    }
-    
-    // If no search term, show all keys
-    if (!searchTerm) {
-        renderPersistentPalette();
-        noResultsState.style.display = 'none';
-        return;
-    }
-    
-    // Filter designs based on search term
-    const filteredDesigns = keyPaletteHistory.filter(design => {
-        // Search in label
-        if (design.label && design.label.toLowerCase().includes(searchTerm)) {
-            return true;
-        }
-        
-        // Search in user description from parsed description JSON
-        if (design.description) {
-            try {
-                const extraData = JSON.parse(design.description);
-                if (extraData.userDescription && extraData.userDescription.toLowerCase().includes(searchTerm)) {
-                    return true;
-                }
-            } catch (e) {
-                // If description is not JSON, search in raw description
-                if (design.description.toLowerCase().includes(searchTerm)) {
-                    return true;
-                }
-            }
-        }
-        
-        return false;
-    });
-    
-    // Clear existing content
-    paletteGrid.innerHTML = '';
-    emptyState.style.display = 'none';
-    
-    if (filteredDesigns.length === 0) {
-        noResultsState.style.display = 'block';
-        return;
-    }
-    
-    noResultsState.style.display = 'none';
-    
-    // Sort filtered designs by timestamp (newest first)
-    const sortedFilteredDesigns = filteredDesigns.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-    
-    sortedFilteredDesigns.forEach((design, index) => {
-        const paletteKeyElement = createPersistentPaletteKeyElement(design, index);
-        paletteGrid.appendChild(paletteKeyElement);
-    });
+    // Instead of implementing filtering here, we'll trigger the unified filter system
+    applyPaletteFilters();
 }
 
-function createPersistentPaletteKeyElement(keyData, index) {
-    const keyElement = document.createElement('div');
-    keyElement.className = 'persistent-palette-key';
-    keyElement.style.backgroundColor = keyData.color || '#ffffff';
-    keyElement.draggable = true;
-    keyElement.dataset.keyData = JSON.stringify(keyData);
+function togglePaletteItemFavorite(itemId) {
+    // Find the item in the palette history
+    const item = keyPaletteHistory.find(design => design.id === itemId);
+    if (!item) return;
     
-    // Extract extra data from description
-    let extraData = {};
-    if (keyData.description) {
-        try {
-            extraData = JSON.parse(keyData.description);
-        } catch (e) {
-            // Not JSON, treat as plain text description
-        }
-    }
+    // Toggle favorite status
+    item.favorite = !item.favorite;
     
-    let keyContent = '';
-    if (keyData.imageData && keyData.imageData.startsWith('data:image/')) {
-        keyContent = `<img class=\"persistent-palette-key-image\" src=\"${keyData.imageData}\" alt=\"${escapeHtml(keyData.label || 'Key image')}\" />`;
-    } else if (keyData.label) {
-        keyContent = `<span class=\"persistent-palette-key-label\">${escapeHtml(keyData.label)}</span>`;
-    } else {
-        keyContent = `<span class=\"persistent-palette-key-label\">?</span>`;
-    }
+    // Save to localStorage
+    localStorage.setItem('keyPaletteHistory', JSON.stringify(keyPaletteHistory));
     
-    // Add overlay images
-    let overlayImages = '';
-    if (extraData.secondaryImageData) {
-        overlayImages += `<img class=\"persistent-palette-secondary-image\" src=\"${extraData.secondaryImageData}\" alt=\"Secondary\" />`;
-    }
-    if (extraData.tertiaryImageData) {
-        overlayImages += `<img class=\"persistent-palette-tertiary-image\" src=\"${extraData.tertiaryImageData}\" alt=\"Tertiary\" />`;
-    }
+    // Re-render the palette
+    applyPaletteFilters();
+}
+
+// Function to apply a palette key design to the currently selected key in the editor
+function applyPaletteKeyToCurrentKey(paletteKeyData) {
+    // Get the key editor modal
+    const keyEditorModal = document.getElementById('key-editor-modal');
     
-    // Determine text label to show
-    let displayLabel = '';
-    if (extraData.userDescription) {
-        displayLabel = extraData.userDescription;
-    } else if (keyData.label) {
-        displayLabel = keyData.label;
-    } else {
-        displayLabel = 'Untitled';
-    }
-    
-    keyElement.innerHTML = `
-        <div class=\"persistent-palette-key-content\">
-            ${keyContent}
-            <div class=\"persistent-palette-key-overlay-images\">
-                ${overlayImages}
-            </div>
-        </div>
-        <div class=\"persistent-palette-key-text-label\" title=\"${escapeHtml(displayLabel)}\">${escapeHtml(displayLabel)}</div>
-        <button class=\"persistent-palette-key-delete\" title=\"Delete from palette\">×</button>
-    `;
-    
-    // Add drag handlers
-    setupPaletteKeyDragHandlers(keyElement, keyData);
-    
-    // Add delete button handler
-    const deleteBtn = keyElement.querySelector('.persistent-palette-key-delete');
-    deleteBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        if (confirm('Delete this design from your palette? This cannot be undone.')) {
-            // Remove from history
-            if (deleteFromKeyPaletteHistory(keyData.id)) {
-                renderPersistentPalette();
+    // Check if the key editor is open
+    if (keyEditorModal && keyEditorModal.style.display !== 'none') {
+        // Extract extra data from palette key description
+        let extraData = {};
+        if (paletteKeyData.description) {
+            try {
+                extraData = JSON.parse(paletteKeyData.description);
+            } catch (e) {
+                // Not JSON, treat as plain text description
+                extraData = {};
             }
         }
-    });
-    
-    return keyElement;
+        
+        // Update the key editor form with the palette key's properties
+        document.getElementById('key-label-input').value = paletteKeyData.label || '';
+        document.getElementById('key-description-input').value = extraData.userDescription || '';
+        document.getElementById('key-color-input').value = paletteKeyData.color || '#ffffff';
+        
+        // Update color label
+        const colorLabel = document.querySelector('#key-editor-modal .color-label');
+        if (colorLabel) {
+            colorLabel.textContent = paletteKeyData.color || '#ffffff';
+        }
+        
+        // Update image slots with the palette key's images
+        updateImageSlotDisplay('primary', paletteKeyData.imageData);
+        updateImageSlotDisplay('secondary', extraData.secondaryImageData);
+        updateImageSlotDisplay('tertiary', extraData.tertiaryImageData);
+        
+        // Store the palette key's data for saving
+        if (paletteKeyData.imageData) {
+            keyEditorModal.dataset.pendingPrimaryImageData = paletteKeyData.imageData;
+        }
+        if (extraData.secondaryImageData) {
+            keyEditorModal.dataset.pendingSecondaryImageData = extraData.secondaryImageData;
+        }
+        if (extraData.tertiaryImageData) {
+            keyEditorModal.dataset.pendingTertiaryImageData = extraData.tertiaryImageData;
+        }
+        
+        // Visual feedback
+        const paletteKeys = document.querySelectorAll('.persistent-palette-key');
+        paletteKeys.forEach(key => key.classList.remove('selected'));
+    }
 }
 
 function setupPaletteKeyDragHandlers(keyElement, keyData) {
     keyElement.addEventListener('dragstart', (e) => {
         keyElement.classList.add('dragging');
+        console.log('Dragging key data:', keyData);
         e.dataTransfer.setData('application/json', JSON.stringify(keyData));
         e.dataTransfer.effectAllowed = 'copy';
         
@@ -2833,6 +3596,9 @@ async function handleDrop(e) {
         const droppedKeyData = JSON.parse(e.dataTransfer.getData('application/json'));
         const targetKeyId = e.currentTarget.dataset.keyId;
         
+        console.log('Dropped key data:', droppedKeyData);
+        console.log('Target key ID:', targetKeyId);
+        
         if (!targetKeyId || !droppedKeyData) {
             console.error('Invalid drop data');
             return;
@@ -2863,6 +3629,9 @@ async function applyKeyDesignToTarget(sourceKeyData, targetKeyId) {
         throw new Error(`Target key ${targetKeyId} not found`);
     }
     
+    console.log('Source key data:', sourceKeyData);
+    console.log('Target key before update:', targetKey);
+    
     // Create updated key with source design
     const updatedKey = { ...targetKey };
     
@@ -2872,7 +3641,7 @@ async function applyKeyDesignToTarget(sourceKeyData, targetKeyId) {
     updatedKey.imageData = sourceKeyData.imageData || '';
     updatedKey.description = sourceKeyData.description || '';
     
-    console.log('Applying design to key:', targetKeyId, updatedKey);
+    console.log('Updated key:', updatedKey);
     
     // Update the key (handles both base layer and modifier combinations)
     if (!activeModifiers || activeModifiers.length === 0) {
@@ -3022,7 +3791,7 @@ function createPaletteKeyElement(key, index) {
 
 function applyKeyFromPalette(sourceKey) {
     // Extract extra data from source key
-    let extraData = {};
+    let extraData = {}
     if (sourceKey.description) {
         try {
             extraData = JSON.parse(sourceKey.description);
@@ -3068,7 +3837,23 @@ function applyKeyFromPalette(sourceKey) {
 }
 
 function updateImageSlotDisplay(slotType, imageData) {
-    const slot = document.querySelector(`[data-slot="${slotType}"]`);
+    // Try to find slot in the active modal (key editor or palette key editor)
+    let slot = null;
+    const keyEditorModal = document.getElementById('key-editor-modal');
+    const paletteKeyEditorModal = document.getElementById('palette-key-editor-modal');
+    
+    // Check which modal is currently active
+    if (keyEditorModal && keyEditorModal.style.display !== 'none') {
+        slot = keyEditorModal.querySelector(`[data-slot="${slotType}"]`);
+    } else if (paletteKeyEditorModal && paletteKeyEditorModal.style.display !== 'none') {
+        slot = paletteKeyEditorModal.querySelector(`[data-slot="${slotType}"]`);
+    }
+    
+    // Fallback to any slot if neither modal is active
+    if (!slot) {
+        slot = document.querySelector(`[data-slot="${slotType}"]`);
+    }
+    
     if (!slot) return;
     
     if (imageData && imageData.startsWith('data:image/')) {
@@ -3092,6 +3877,35 @@ function clearModalData(modal) {
     fileInputs.forEach(input => input.value = '');
 }
 
+function updatePaletteKeyEditorImageSlot(slotType, imageData) {
+    // Find slot specifically in the palette key editor modal
+    const modal = document.getElementById('palette-key-editor-modal');
+    if (!modal) return;
+    
+    const slot = modal.querySelector(`[data-slot="${slotType}"]`);
+    if (!slot) return;
+    
+    if (imageData && imageData.startsWith('data:image/')) {
+        updateSlotImage(slot, imageData, slotType);
+    } else {
+        clearSlotImage(slot, slotType);
+    }
+}
+
+function clearAllModalData() {
+    // Clear data from both modals
+    const keyEditorModal = document.getElementById('key-editor-modal');
+    const paletteKeyEditorModal = document.getElementById('palette-key-editor-modal');
+    
+    if (keyEditorModal) {
+        clearModalData(keyEditorModal);
+    }
+    
+    if (paletteKeyEditorModal) {
+        clearModalData(paletteKeyEditorModal);
+    }
+}
+
 async function saveKeyEdit() {
     const modal = document.getElementById('key-editor-modal');
     const keyId = modal.dataset.editingKeyId;
@@ -3102,16 +3916,7 @@ async function saveKeyEdit() {
     }
     
     try {
-        // Handle primary image upload if there's pending image data
-        if (modal.dataset.pendingPrimaryImageData) {
-            console.log('Uploading primary image for key:', keyId);
-            await UploadKeyImage(keyId, modal.dataset.pendingPrimaryImageData);
-            console.log('Primary image upload successful');
-            // After uploading image, reload current layer to get updated data with image
-            await loadCurrentLayer();
-        }
-        
-        // Find the current key for other updates (now includes image data if uploaded)
+        // Find the current key for other updates
         if (!currentKeys || !Array.isArray(currentKeys)) {
             console.error('currentKeys is not available or not an array');
             await loadCurrentLayer(); // Try to reload
@@ -3183,40 +3988,18 @@ async function saveKeyEdit() {
                 hasChanges = true;
             }
             
-            // Handle primary image (already uploaded above if present)
+            // Handle primary image
             if (modal.dataset.pendingPrimaryImageData) {
+                key.imageData = modal.dataset.pendingPrimaryImageData;
                 hasChanges = true; // Image upload counts as a change
             }
             if (modal.dataset.removePrimary === 'true') {
-                // Remove primary image from key
-                try {
-                    await RemoveKeyImage(keyId);
-                    console.log('Primary image removed successfully');
-                    // Reload current layer to get updated key data without image
-                    await loadCurrentLayer();
-                    // Update the key reference to the newly loaded data
-                    const updatedKey = currentKeys.find(k => k.id === keyId);
-                    if (updatedKey) {
-                        // Copy fresh data but preserve our current changes
-                        key.imageData = updatedKey.imageData; // Should be null/empty now
-                        key.label = newLabel; // Keep our label change
-                        key.color = newColor; // Keep our color change
-                        // Description will be updated below with extraData
-                    }
-                    hasChanges = true;
-                } catch (error) {
-                    console.error('Failed to remove primary image:', error);
-                    alert('Failed to remove primary image: ' + error.message);
-                }
+                key.imageData = "";
+                hasChanges = true;
             }
             
             // Store as JSON in description field
             key.description = JSON.stringify(extraData);
-            
-            // Mark key as user-modified if any changes were made
-            if (hasChanges) {
-                key.userModified = true; // Add explicit flag
-            }
             
             console.log('Updating key with data:', key);
             
@@ -3243,6 +4026,93 @@ async function saveKeyEdit() {
     } catch (error) {
         console.error('Failed to save key:', error);
         alert('Failed to save key changes: ' + error.message);
+    }
+}
+
+async function savePaletteKeyEdit() {
+    const modal = document.getElementById('palette-key-editor-modal');
+    const keyDataJson = modal.dataset.editingKeyData;
+    
+    if (!keyDataJson) {
+        console.error('No key data found for editing');
+        return;
+    }
+    
+    try {
+        // Parse the key data
+        let keyData = JSON.parse(keyDataJson);
+        
+        // Get values from form
+        const newLabel = document.getElementById('palette-key-label-input').value || '';
+        const newColor = document.getElementById('palette-key-color-input').value || '#ffffff';
+        const newUserDescription = document.getElementById('palette-key-description-input').value || '';
+        
+        // Update key data
+        keyData.label = newLabel;
+        keyData.color = newColor;
+        
+        // Parse existing description to extract extra data
+        let extraData = {};
+        if (keyData.description) {
+            try {
+                extraData = JSON.parse(keyData.description);
+            } catch (e) {
+                // Not JSON, treat as plain text description
+                extraData = {};
+            }
+        }
+        
+        // Update user description
+        extraData.userDescription = newUserDescription;
+        
+        // Handle images - check both pending data and current slot states
+        if (modal.dataset.pendingPrimaryImageData) {
+            keyData.imageData = modal.dataset.pendingPrimaryImageData;
+        }
+        if (modal.dataset.removePrimary === 'true') {
+            keyData.imageData = "";
+        }
+        
+        if (modal.dataset.pendingSecondaryImageData) {
+            extraData.secondaryImageData = modal.dataset.pendingSecondaryImageData;
+        }
+        if (modal.dataset.removeSecondary === 'true') {
+            delete extraData.secondaryImageData;
+        }
+        
+        if (modal.dataset.pendingTertiaryImageData) {
+            extraData.tertiaryImageData = modal.dataset.pendingTertiaryImageData;
+        }
+        if (modal.dataset.removeTertiary === 'true') {
+            delete extraData.tertiaryImageData;
+        }
+        
+        // Store as JSON in description field
+        keyData.description = JSON.stringify(extraData);
+        
+        // Update the key in the palette history
+        const index = keyPaletteHistory.findIndex(item => item.id === keyData.id);
+        if (index !== -1) {
+            keyPaletteHistory[index] = keyData;
+            // Save to localStorage for persistence
+            localStorage.setItem('keyPaletteHistory', JSON.stringify(keyPaletteHistory));
+            console.log('Palette key updated successfully');
+        } else {
+            throw new Error(`Key with ID ${keyData.id} not found in palette history`);
+        }
+        
+        // Close modal and reset handler setup flag
+        modal.style.display = 'none';
+        resetPaletteKeyEditorHandlerFlags();
+        
+        // Refresh persistent palette
+        applyPaletteFilters();
+        
+        console.log('Palette key edit saved successfully');
+        
+    } catch (error) {
+        console.error('Failed to save palette key:', error);
+        alert('Failed to save palette key changes: ' + error.message);
     }
 }
 
@@ -3726,6 +4596,10 @@ function setupProfileEditor() {
 }
 
 function openProfileEditor(profileId) {
+    if (!profiles) {
+        console.error('profiles is not defined');
+        return;
+    }
     const profile = profiles.find(p => p.id === profileId);
     if (!profile) {
         console.error('Profile not found:', profileId);

@@ -28,6 +28,8 @@ A desktop application built with Wails (Go + HTML/CSS/JS) for creating visual ke
 - **Persistent Storage**: Key designs saved locally using localStorage
 - **Quick Apply**: One-click application of saved designs to other keys
 - **Design Management**: Delete unwanted designs from palette
+- **Favorites**: Mark frequently used items as favorites
+- **Enhanced Sorting**: Sort by time or color similarity
 
 ### 🔧 Interactive Editing
 - **Visual Key Editor**: Modal-based editor for detailed key customization
